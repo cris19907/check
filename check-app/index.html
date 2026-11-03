@@ -964,7 +964,7 @@ async function shrinkImage(file) {
 async function ocr(blob, name) {
   if (!config) throw new Error('Para leer fotos, primero conecta Check con Google Drive (⚙️ Ajustes).');
   impStatus('Leyendo el texto con Google… puede tardar unos segundos.');
-  try { return (await api('ocr', { name, mimeType: blob.type || 'image/jpeg', b64: await toBase64(blob) })).text || ''; }
+  try { return ((await api('ocr', { name, mimeType: blob.type || 'image/jpeg', b64: await toBase64(blob) })).text || '').replace(/\s+(?=\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}\b)/g, '\n'); }
   catch (e) { throw new Error(/DRIVE_API_OFF/.test(e.message) ? 'Falta activar "Drive API" en Apps Script.' : 'No se pudo leer la imagen: ' + e.message); }
 }
 async function handleFile(input) {
