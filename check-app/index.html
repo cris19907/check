@@ -1031,9 +1031,9 @@ function mergeInbox(inbox) {
   inbox.forEach(x => {
     if (!x || !x.mailId || x.skip || (!x.amount && !x.usd)) return;
     const id = 'm_' + x.mailId;
-    if (deleted[id] || legacy.has(x.mailId)) return; if (have.has(id)) { const t = findTx(id); if (t && t.source === 'correo' && !t.edited && !x.usd && (t.desc !== x.desc || t.amount !== x.amount || t.kind !== x.kind)) { Object.assign(t, { desc: x.desc, amount: x.amount, kind: x.kind, date: x.date, category: x.kind === 'traspaso' ? 'Traspaso' : x.kind === 'transfer_in' ? 'Ingreso' : guessCategory(x.desc.replace(/^Anulación · /, '')) }); added++; } return; }
+    if (deleted[id] || legacy.has(x.mailId)) return; if (have.has(id)) { const t = findTx(id); if (t && t.source === 'correo' && !t.edited && !x.usd && (t.desc !== x.desc || t.amount !== x.amount || t.kind !== x.kind || (x.kind === 'traspaso' && t.category === 'Traspaso'))) { Object.assign(t, { desc: x.desc, amount: x.amount, kind: x.kind, date: x.date, category: x.kind === 'traspaso' ? (x.amount > 0 ? 'Ingreso' : guessCategory(x.desc)) : x.kind === 'transfer_in' ? 'Ingreso' : guessCategory(x.desc.replace(/^Anulación · /, '')) }); added++; } return; }
     let category;
-    if (x.kind === 'traspaso') category = 'Traspaso';
+    if (x.kind === 'traspaso') category = x.amount > 0 ? 'Ingreso' : guessCategory(x.desc);
     else if (x.kind === 'transfer_in') category = 'Ingreso';
     else if (x.kind === 'anulacion') { const o = x.of && findTx('m_' + x.of); category = o ? catOf(o) : guessCategory(x.desc.replace(/^Anulación · /, '')); }
     else category = guessCategory(x.desc);
@@ -1138,7 +1138,7 @@ function findAmount(text) {
   return null;
 }
 function cleanDesc(s) { return s.replace(/\s{2,}/g, ' ').replace(/^[\s\-–|:*#$]+|[\s\-–|:*#$]+$/g, '').trim(); }
-function makeRow(date, desc, amt) { desc = cleanDesc(desc) || 'Movimiento'; const tras = SELF_RE.test(desc) || CARD_PAY_RE.test(desc); return { date, desc, amount: amt, category: tras ? 'Traspaso' : amt > 0 ? 'Ingreso' : guessCategory(desc), on: !SKIP_RE.test(desc) }; }
+function makeRow(date, desc, amt) { desc = cleanDesc(desc) || 'Movimiento'; const tras = CARD_PAY_RE.test(desc); return { date, desc, amount: amt, category: tras ? 'Traspaso' : amt > 0 ? 'Ingreso' : guessCategory(desc), on: !SKIP_RE.test(desc) }; }
 function parseLine(line) {
   line = line.replace(/ /g, ' ').trim();
   if (line.length < 6) return null;
