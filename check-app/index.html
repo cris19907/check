@@ -162,7 +162,7 @@ button { cursor: pointer; }
 .field > span { font-size: 12px; font-weight: 700; color: var(--muted); }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .amount-input { font-size: 30px; font-weight: 800; text-align: center; padding: 14px; }
-.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: var(--r-sm); padding: 4px; gap: 4px; margin-bottom: 14px; }
+.seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); background: var(--surface-2); border-radius: var(--r-sm); padding: 4px; gap: 4px; margin-bottom: 14px; }
 .seg button { border: none; background: none; padding: 10px; border-radius: 9px; font-weight: 800; font-size: 14px; color: var(--muted); }
 .seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.2); }
 .seg button.on.g { color: var(--bad); }
@@ -318,6 +318,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
     <div class="seg" id="tx-kind">
       <button type="button" class="g on" onclick="setKind(-1)">Gasto</button>
       <button type="button" class="i" onclick="setKind(1)">Ingreso</button>
+      <button type="button" class="t" onclick="setKind(0)">Traspaso</button>
     </div>
     <label class="field"><input class="input amount-input num" id="tx-amount" type="text" inputmode="numeric" placeholder="$0" autocomplete="off" oninput="fmtAmountInput(this)"></label>
     <label class="field"><span>Descripción</span><input class="input" id="tx-desc" type="text" placeholder="Ej: Almuerzo, Uber, Copec" autocomplete="off" oninput="autoCat()"></label>
@@ -522,6 +523,7 @@ function rebuildCats() {
   CATS = {};
   state.categories.forEach(c => CATS[c.name] = { e: c.e, c: c.c });
   CATS['Ingreso'] = { e: '💰', c: '#10b981' };
+  CATS['Traspaso'] = { e: '🔁', c: '#64748b' };
   EXPENSE_CATS = state.categories.map(c => c.name);
 }
 const LS_DATA = 'check_data', LS_CFG = 'check_config', LS_SYNC = 'check_last_sync';
@@ -547,6 +549,7 @@ function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function normalize(s) {
   s = Object.assign({ updatedAt: 0, transactions: [], recurring: [], installments: [], receivables: [], mailSeen: [], investments: [] }, s || {});
   if (!Array.isArray(s.categories) || !s.categories.length) s.categories = clone(DEFAULT_CATS);
+  s.deleted = s.deleted || {};
   s.recurring = s.recurring.map(r => Object.assign({}, r, { day: typeof r.day === 'number' ? r.day : (parseInt(r.day, 10) || 1) }));
   s.installments = s.installments.map(i => Object.assign({}, i, { cuota: +i.cuota || 0, totalCuotas: +i.totalCuotas || 1, current: +i.current || 0 }));
   return s;
@@ -582,7 +585,10 @@ let viewMonth = (() => { const d = new Date(); return { y: d.getFullYear(), m: d
 function monthKey(off) { const d = new Date(viewMonth.y, viewMonth.m + (off || 0), 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
 function txOf(key) { return state.transactions.filter(t => String(t.date).slice(0, 7) === key); }
 function catOf(t) { return CATS[t.category] ? t.category : (t.amount > 0 ? 'Ingreso' : otrosName()); }
-function expByCat(txs) { const o = {}; EXPENSE_CATS.forEach(c => o[c] = 0); txs.forEach(t => { if (t.amount < 0) o[catOf(t) === 'Ingreso' ? otrosName() : catOf(t)] += -t.amount; }); return o; }
+function isSpecial(c) { return c === 'Ingreso' || c === 'Traspaso'; }
+// Gastos por categoría: compras restan, anulaciones/devoluciones (monto positivo en categoría de gasto) suman de vuelta.
+function expByCat(txs) { const o = {}; EXPENSE_CATS.forEach(c => o[c] = 0); txs.forEach(t => { const c = catOf(t); if (!isSpecial(c)) o[c] -= t.amount; else if (c === 'Ingreso' && t.amount < 0) o[otrosName()] -= t.amount; }); EXPENSE_CATS.forEach(c => o[c] = Math.max(0, o[c])); return o; }
+function totals(txs) { let inc = 0, exp = 0; txs.forEach(t => { const c = catOf(t); if (c === 'Traspaso') return; if (c === 'Ingreso') { if (t.amount > 0) inc += t.amount; else exp -= t.amount; } else exp -= t.amount; }); return { inc, exp: Math.max(0, exp) }; }
 function newId() { return Date.now() + Math.floor(Math.random() * 1000); }
 
 let toastT;
@@ -613,7 +619,7 @@ function render() {
 function txRow(t) {
   const c = CATS[catOf(t)];
   const d = new Date(t.date + 'T12:00:00');
-  return `<button class="tx" onclick="editTx(${t.id})">
+  return `<button class="tx" onclick="editTx('${esc(String(t.id))}')">
     <span class="cat-ico" style="background:${c.c}22">${c.e}</span>
     <span class="tx-body"><span class="tx-title" style="display:block">${esc(t.desc)}</span>
     <span class="tx-sub" style="display:block">${esc(catOf(t))} · ${d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}${t.source === 'correo' ? ' · ✉️' : ''}</span></span>
@@ -622,8 +628,7 @@ function txRow(t) {
 
 function renderHome() {
   const txs = txOf(monthKey(0));
-  let inc = 0, exp = 0;
-  txs.forEach(t => t.amount > 0 ? inc += t.amount : exp -= t.amount);
+  const { inc, exp } = totals(txs);
   $('h-balance').textContent = (inc - exp < 0 ? '-' : '') + clp(inc - exp);
   $('h-inc').textContent = clp(inc);
   $('h-exp').textContent = clp(exp);
@@ -722,7 +727,8 @@ function setKind(k) {
   txKind = k;
   $('tx-kind').children[0].classList.toggle('on', k < 0);
   $('tx-kind').children[1].classList.toggle('on', k > 0);
-  $('tx-cat-field').hidden = k > 0;
+  $('tx-kind').children[2].classList.toggle('on', k === 0);
+  $('tx-cat-field').hidden = k >= 0;
 }
 function drawCats() {
   $('tx-cats').innerHTML = EXPENSE_CATS.map((c, i) => `<button type="button" class="cat-opt ${c === txCat ? 'on' : ''}" data-i="${i}"><span class="e">${CATS[c].e}</span>${esc(c)}</button>`).join('') + `<button type="button" class="cat-opt" id="tx-cat-edit"><span class="e">✏️</span>Editar</button>`;
@@ -730,16 +736,18 @@ function drawCats() {
   $('tx-cat-edit').onclick = () => { closeSheet('sh-tx'); openCats(); };
 }
 function autoCat() { if (catTouched || txKind > 0) return; const g = guessCategory($('tx-desc').value); if (g !== txCat) { txCat = g; drawCats(); } }
+function findTx(id) { return state.transactions.find(x => String(x.id) === String(id)); }
 function editTx(id) {
-  const t = id ? state.transactions.find(x => x.id === id) : null;
+  const t = id != null ? findTx(id) : null;
   editingTx = t ? t.id : null;
   catTouched = !!t;
   $('tx-title').textContent = t ? 'Editar movimiento' : 'Nuevo movimiento';
   $('tx-amount').value = t ? clp(t.amount) : '';
   $('tx-desc').value = t ? t.desc : '';
   $('tx-date').value = t ? t.date : todayISO();
-  txCat = t && t.amount < 0 ? catOf(t) : EXPENSE_CATS[0];
-  setKind(t && t.amount > 0 ? 1 : -1);
+  const tc = t ? catOf(t) : null;
+  txCat = t && !isSpecial(tc) ? tc : EXPENSE_CATS[0];
+  setKind(!t ? -1 : tc === 'Ingreso' ? 1 : tc === 'Traspaso' ? 0 : -1);
   drawCats();
   $('tx-del').hidden = !t;
   openSheet('sh-tx');
@@ -748,15 +756,20 @@ function editTx(id) {
 function saveTx() {
   const amt = parseMoney($('tx-amount').value), desc = $('tx-desc').value.trim();
   if (!amt) { toast('Escribe un monto'); return; }
-  const data = { date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txCat), amount: txKind * amt, category: txKind > 0 ? 'Ingreso' : txCat };
-  if (editingTx) Object.assign(state.transactions.find(x => x.id === editingTx), data);
+  const prev = editingTx != null ? findTx(editingTx) : null;
+  let amount, category;
+  if (txKind > 0) { amount = amt; category = 'Ingreso'; }
+  else if (txKind === 0) { amount = prev && catOf(prev) === 'Traspaso' && prev.amount > 0 ? amt : -amt; category = 'Traspaso'; }
+  else { amount = prev && !isSpecial(catOf(prev)) && prev.amount > 0 ? amt : -amt; category = txCat; }   // anulaciones conservan su signo
+  const data = { date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category };
+  if (prev) Object.assign(prev, data);
   else state.transactions.push(Object.assign({ id: newId() }, data));
   closeSheet('sh-tx'); commit(); toast(editingTx ? 'Movimiento actualizado' : 'Movimiento guardado');
 }
 function deleteTx() {
-  const t = state.transactions.find(x => x.id === editingTx); if (!t) return;
+  const t = findTx(editingTx); if (!t) return;
   closeSheet('sh-tx');
-  confirmAsk('¿Borrar "' + t.desc + '"?', 'Borrar', () => { state.transactions = state.transactions.filter(x => x.id !== t.id); commit(); toast('Movimiento borrado'); });
+  confirmAsk('¿Borrar "' + t.desc + '"?', 'Borrar', () => { state.transactions = state.transactions.filter(x => x !== t); commit(); toast('Movimiento borrado'); });
 }
 
 // ================= Suscripciones =================
@@ -910,10 +923,51 @@ function deleteInvestment() {
 }
 
 // ================= Sincronización con Drive =================
-let saveTimer = null, syncing = false, pendingPush = false;
+let saveTimer = null, syncing = false, pendingPush = false, pushing = null;
+const COLLS = ['transactions', 'recurring', 'installments', 'receivables', 'investments'];
+let snap = null;
 function setSync(text, cls) { const s = $('sync'); s.textContent = text; s.className = 'sync ' + (cls || ''); }
+// Foto de cómo estaban los datos: sirve para saber qué cambió el usuario desde la última vez.
+function takeSnap() {
+  snap = { cats: JSON.stringify(state.categories) };
+  COLLS.forEach(k => { const m = {}; (state[k] || []).forEach(r => { const c = Object.assign({}, r); delete c.u; m[String(r.id)] = JSON.stringify(c); }); snap[k] = m; });
+}
+function stampChanges() {
+  const now = Date.now();
+  if (!snap) takeSnap();
+  state.deleted = state.deleted || {};
+  COLLS.forEach(k => {
+    const before = snap[k] || {}, ids = {};
+    (state[k] || []).forEach(r => { const id = String(r.id); ids[id] = 1; const c = Object.assign({}, r); delete c.u; if (before[id] !== JSON.stringify(c)) r.u = now; });
+    Object.keys(before).forEach(id => { if (!ids[id]) state.deleted[id] = now; });
+  });
+  if (snap.cats !== JSON.stringify(state.categories)) state.catsU = now;
+  state.updatedAt = now;
+  takeSnap();
+}
+// Mezcla registro por registro: gana el cambio más reciente; lo borrado no vuelve.
+function mergeStates(a, b) {
+  a = a || {}; b = b || {};
+  const out = Object.assign({}, a, b);
+  const deleted = Object.assign({}, a.deleted || {});
+  Object.keys(b.deleted || {}).forEach(id => { deleted[id] = Math.max(deleted[id] || 0, b.deleted[id]); });
+  COLLS.forEach(k => {
+    const map = {};
+    (a[k] || []).forEach(r => { map[String(r.id)] = r; });
+    (b[k] || []).forEach(r => { const id = String(r.id), cur = map[id]; if (!cur && !r.u && (a[k] || []).length) return; if (!cur || (r.u || 0) >= (cur.u || 0)) map[id] = r; });  // registros antiguos sin fecha solo sobreviven si el otro lado también los tiene
+    out[k] = Object.keys(map).map(id => map[id]).filter(r => !(deleted[String(r.id)] >= (r.u || 0)));
+  });
+  out.categories = ((b.catsU || 0) >= (a.catsU || 0) ? b.categories : a.categories) || a.categories || b.categories;
+  out.catsU = Math.max(a.catsU || 0, b.catsU || 0);
+  out.v = Math.max(a.v || 0, b.v || 0);
+  out.mailSeen = out.v >= 3 ? [] : Array.from(new Set((a.mailSeen || []).concat(b.mailSeen || []))).slice(-1500);
+  out.deleted = deleted;
+  out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
+  return out;
+}
+function setState(s) { state = normalize(s); lsSet(LS_DATA, JSON.stringify(state)); takeSnap(); render(); }
 function commit() {
-  state.updatedAt = Date.now();
+  stampChanges();
   lsSet(LS_DATA, JSON.stringify(state));
   render();
   pendingPush = true;
@@ -929,12 +983,21 @@ async function api(action, extra) {
 async function push() {
   if (!config) { setSync('Solo en este teléfono', 'warn'); return; }
   if (!navigator.onLine) { setSync('Sin conexión · se guardará después', 'warn'); return; }
+  if (pushing) return pushing;
   setSync('Guardando…', 'busy');
-  try {
-    await api('save', { data: JSON.stringify(state) });
-    pendingPush = false; lsSet(LS_SYNC, String(Date.now()));
-    setSync('Guardado en Drive', 'ok');
-  } catch (e) { setSync(e.message === 'unauthorized' ? 'Clave incorrecta' : 'No se pudo guardar · reintentará', 'warn'); }
+  pushing = (async () => {
+    try {
+      const sent = JSON.stringify(state);
+      const r = await api('save', { data: sent });
+      pendingPush = false;
+      // El servidor devuelve la mezcla con lo que había en Drive; se combina con cambios hechos mientras se guardaba.
+      if (r.data) setState(mergeStates(JSON.parse(r.data), JSON.stringify(state) === sent ? {} : state));
+      lsSet(LS_SYNC, String(Date.now()));
+      setSync('Guardado en Drive', 'ok');
+    } catch (e) { pendingPush = true; setSync(e.message === 'unauthorized' ? 'Clave incorrecta' : 'No se pudo guardar · reintentará', 'warn'); }
+    pushing = null;
+  })();
+  return pushing;
 }
 async function pull() {
   if (!config) { setSync('Solo en este teléfono', 'warn'); return; }
@@ -942,32 +1005,56 @@ async function pull() {
   if (syncing) return; syncing = true;
   setSync('Sincronizando…', 'busy');
   try {
+    if (pushing) await pushing;
+    await migrateMail();
     const r = await api('load');
-    const remote = r.data ? normalize(JSON.parse(r.data)) : null;
-    let needPush = !remote || (state.updatedAt || 0) > (remote.updatedAt || 0) || pendingPush;
-    if (remote && (remote.updatedAt || 0) > (state.updatedAt || 0) && !pendingPush) {
-      state = remote; lsSet(LS_DATA, JSON.stringify(state)); needPush = false;
-    }
+    const remoteText = r.data || 'null';
+    const remoteObj = JSON.parse(remoteText);
+    // Aparato nuevo o sin datos propios: se usa directamente lo que hay en Drive.
+    const merged = remoteObj && !state.updatedAt ? remoteObj : mergeStates(remoteObj || {}, state);
+    setState(merged);
     const added = mergeInbox(r.inbox || []);
-    if (added) { state.updatedAt = Date.now(); lsSet(LS_DATA, JSON.stringify(state)); needPush = true; toast(added === 1 ? '1 compra agregada desde tu correo' : added + ' compras agregadas desde tu correo'); }
-    render();
-    if (needPush) await push();
+    if (added) { stampChanges(); lsSet(LS_DATA, JSON.stringify(state)); render(); toast(added === 1 ? '1 movimiento agregado desde tu correo' : added + ' movimientos agregados desde tu correo'); }
+    if (added || pendingPush || JSON.stringify(normalize(JSON.parse(remoteText) || {})) !== JSON.stringify(state)) await push();
     else { lsSet(LS_SYNC, String(Date.now())); setSync('Guardado en Drive', 'ok'); }
   } catch (e) { setSync(e.message === 'unauthorized' ? 'Clave incorrecta' : 'No se pudo conectar', 'warn'); }
   syncing = false;
 }
+// Movimientos del correo: id fijo por correo ("m_" + id del mensaje), así nunca se duplican entre aparatos.
 function mergeInbox(inbox) {
-  const seen = new Set(state.mailSeen || []);
+  const legacy = new Set(state.mailSeen || []);
+  const have = new Set(state.transactions.map(t => String(t.id)));
+  const deleted = state.deleted || {};
+  const byMail = {};
+  inbox.forEach(x => { if (x && x.mailId) byMail[x.mailId] = x; });
   let added = 0;
   inbox.forEach(x => {
-    if (!x || !x.mailId || seen.has(x.mailId)) return;
-    seen.add(x.mailId);
-    if (x.skip || !x.amount) return;
-    state.transactions.push({ id: newId() + added, date: x.date, desc: x.desc, amount: x.amount, category: guessCategory(x.desc), source: 'correo' });
-    added++;
+    if (!x || !x.mailId || x.skip || !x.amount) return;
+    const id = 'm_' + x.mailId;
+    if (have.has(id) || deleted[id] || legacy.has(x.mailId)) return;
+    let category;
+    if (x.kind === 'traspaso') category = 'Traspaso';
+    else if (x.kind === 'transfer_in') category = 'Ingreso';
+    else if (x.kind === 'anulacion') { const o = x.of && findTx('m_' + x.of); category = o ? catOf(o) : guessCategory(x.desc.replace(/^Anulación · /, '')); }
+    else category = guessCategory(x.desc);
+    state.transactions.push({ id, date: x.date, desc: x.desc, amount: x.amount, category, source: 'correo', kind: x.kind || 'compra' });
+    have.add(id); added++;
   });
-  state.mailSeen = [...seen].slice(-600);
   return added;
+}
+// Una sola vez: los movimientos del correo antiguos se vuelven a leer con el lector nuevo.
+async function migrateMail() {
+  if ((state.v || 0) >= 3) return;
+  const old = state.transactions.filter(t => t.source === 'correo' && !String(t.id).startsWith('m_'));
+  state.deleted = state.deleted || {};
+  old.forEach(t => state.deleted[String(t.id)] = Date.now());
+  state.transactions = state.transactions.filter(t => !old.includes(t));
+  state.mailSeen = [];
+  state.v = 3;
+  stampChanges();
+  lsSet(LS_DATA, JSON.stringify(state));
+  try { await api('rescanMail', { days: 45 }); } catch (e) {}
+  pendingPush = true;
 }
 function syncNow() { closeSheet('sh-settings'); pull(); }
 window.addEventListener('online', () => pull());
@@ -1162,8 +1249,12 @@ function importText() {
 }
 let pending = [];
 function openReview(rows) {
-  const seen = new Set(state.transactions.map(t => t.date + '|' + t.amount + '|' + String(t.desc).toLowerCase()));
-  rows.forEach(r => { r.dup = seen.has(r.date + '|' + r.amount + '|' + r.desc.toLowerCase()); if (r.dup) r.on = false; });
+  const day = s => Math.round(new Date(s + 'T12:00:00') / 864e5);
+  const used = new Set();
+  rows.forEach(r => {
+    const m = state.transactions.find(t => !used.has(t) && Math.abs(t.amount) === Math.abs(r.amount) && Math.abs(day(t.date) - day(r.date)) <= 2);
+    r.dup = !!m; if (m) { used.add(m); r.on = false; }
+  });
   pending = rows; closeSheet('sh-import'); drawReview(); openSheet('sh-review');
 }
 function drawReview() {
@@ -1172,7 +1263,7 @@ function drawReview() {
     const el = document.createElement('div'); el.className = 'rv' + (r.on ? '' : ' off');
     el.innerHTML = `<input type="checkbox" ${r.on ? 'checked' : ''} aria-label="Incluir">
       <div class="rv-main"><div class="tx-title">${esc(r.desc)}</div>
-      <div class="tx-sub">${esc(r.date)}${r.dup ? '<span class="dup">ya existe</span>' : ''}</div>
+      <div class="tx-sub">${esc(r.date)}${r.dup ? '<span class="dup">posible duplicado</span>' : ''}</div>
       <select aria-label="Categoría">${Object.keys(CATS).map(c => `<option ${c === r.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
       <button class="rv-amt num ${r.amount > 0 ? 'pos' : ''}" aria-label="Cambiar gasto o ingreso">${signed(r.amount)}</button>`;
     el.querySelector('input').onchange = e => { r.on = e.target.checked; el.classList.toggle('off', !r.on); countReview(); };
@@ -1195,6 +1286,7 @@ function confirmImport() {
 }
 
 // ================= Inicio =================
+takeSnap();
 render();
 go('v-home');
 pull();
