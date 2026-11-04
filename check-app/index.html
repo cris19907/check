@@ -426,7 +426,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
     <h3>Ajustes</h3>
     <div class="kv"><span>Sincronización</span><span id="st-sync">—</span></div>
     <div class="kv"><span>Última sincronización</span><span id="st-last">—</span></div>
-    <div class="kv"><span>Movimientos guardados</span><span id="st-count">0</span></div>
+    <div class="kv"><span>Movimientos guardados</span><span id="st-count">0</span></div><label class="field" style="margin-top:12px;"><span>Valor del dólar para compras en USD</span><input class="input num" id="st-usd" inputmode="numeric" onchange="setUsd(this.value)"></label>
     <details class="more">
       <summary>Conectar con Google Drive</summary>
       <p class="help" style="margin-top:12px;">Pega la dirección del servidor y la clave. Solo se hace una vez por aparato.</p>
@@ -1029,7 +1029,7 @@ function mergeInbox(inbox) {
   inbox.forEach(x => { if (x && x.mailId) byMail[x.mailId] = x; });
   let added = 0;
   inbox.forEach(x => {
-    if (!x || !x.mailId || x.skip || !x.amount) return;
+    if (!x || !x.mailId || x.skip || (!x.amount && !x.usd)) return;
     const id = 'm_' + x.mailId;
     if (have.has(id) || deleted[id] || legacy.has(x.mailId)) return;
     let category;
@@ -1037,7 +1037,7 @@ function mergeInbox(inbox) {
     else if (x.kind === 'transfer_in') category = 'Ingreso';
     else if (x.kind === 'anulacion') { const o = x.of && findTx('m_' + x.of); category = o ? catOf(o) : guessCategory(x.desc.replace(/^Anulación · /, '')); }
     else category = guessCategory(x.desc);
-    state.transactions.push({ id, date: x.date, desc: x.desc, amount: x.amount, category, source: 'correo', kind: x.kind || 'compra' });
+    const usd = x.usd ? Math.abs(x.usd) : 0; state.transactions.push({ id, date: x.date, desc: usd ? x.desc + ' (USD ' + String(usd).replace('.', ',') + ')' : x.desc, amount: usd ? Math.sign(x.usd) * Math.round(usd * (state.usdRate || 890)) : x.amount, usd: x.usd || undefined, category, source: 'correo', kind: x.kind || 'compra' });
     have.add(id); added++;
   });
   return added;
@@ -1056,14 +1056,14 @@ async function migrateMail() {
   try { await api('rescanMail', { days: 45 }); } catch (e) {}
   pendingPush = true;
 }
-function syncNow() { closeSheet('sh-settings'); pull(); }
+function setUsd(v) { state.usdRate = parseMoney(v) || 890; commit(); toast('Valor del dólar guardado'); } function syncNow() { closeSheet('sh-settings'); pull(); }
 window.addEventListener('online', () => pull());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pull(); });
 
 function openSettings() {
   $('st-sync').textContent = config ? 'Conectado a Google Drive' : 'No conectado';
   const last = +lsGet(LS_SYNC); $('st-last').textContent = last ? new Date(last).toLocaleString('es-CL') : '—';
-  $('st-count').textContent = state.transactions.length;
+  $('st-count').textContent = state.transactions.length; $('st-usd').value = clp(state.usdRate || 890);
   $('st-url').value = config ? config.url : ''; $('st-token').value = config ? config.token : '';
   openSheet('sh-settings');
 }
