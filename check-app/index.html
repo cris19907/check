@@ -1252,7 +1252,7 @@ function openReview(rows) {
   const day = s => Math.round(new Date(s + 'T12:00:00') / 864e5);
   const used = new Set();
   rows.forEach(r => {
-    const m = state.transactions.find(t => !used.has(t) && Math.abs(t.amount) === Math.abs(r.amount) && Math.abs(day(t.date) - day(r.date)) <= 2);
+    const m = state.transactions.find(t => !used.has(t) && t.amount === r.amount && Math.abs(day(t.date) - day(r.date)) <= 1);
     r.dup = !!m; if (m) { used.add(m); r.on = false; }
   });
   pending = rows; closeSheet('sh-import'); drawReview(); openSheet('sh-review');
