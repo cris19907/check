@@ -1,5 +1,5 @@
 // Check — service worker: guarda la app para abrirla sin conexión.
-const CACHE = 'check-v3';
+const CACHE = 'check-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -20,7 +20,7 @@ self.addEventListener('fetch', e => {
   // La app: primero red (para recibir actualizaciones), si no hay conexión, la copia guardada.
   if (url.origin === location.origin) {
     e.respondWith(
-      fetch(e.request).then(res => {
+      fetch(e.request, { cache: 'no-cache' }).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
         return res;
