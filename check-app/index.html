@@ -761,7 +761,7 @@ function saveTx() {
   if (txKind > 0) { amount = amt; category = 'Ingreso'; }
   else if (txKind === 0) { amount = prev && catOf(prev) === 'Traspaso' && prev.amount > 0 ? amt : -amt; category = 'Traspaso'; }
   else { amount = prev && !isSpecial(catOf(prev)) && prev.amount > 0 ? amt : -amt; category = txCat; }   // anulaciones conservan su signo
-  const data = { date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category };
+  const data = { edited: true, date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category };
   if (prev) Object.assign(prev, data);
   else state.transactions.push(Object.assign({ id: newId() }, data));
   closeSheet('sh-tx'); commit(); toast(editingTx ? 'Movimiento actualizado' : 'Movimiento guardado');
@@ -1031,7 +1031,7 @@ function mergeInbox(inbox) {
   inbox.forEach(x => {
     if (!x || !x.mailId || x.skip || (!x.amount && !x.usd)) return;
     const id = 'm_' + x.mailId;
-    if (have.has(id) || deleted[id] || legacy.has(x.mailId)) return;
+    if (deleted[id] || legacy.has(x.mailId)) return; if (have.has(id)) { const t = findTx(id); if (t && t.source === 'correo' && !t.edited && !x.usd && (t.desc !== x.desc || t.amount !== x.amount || t.kind !== x.kind)) { Object.assign(t, { desc: x.desc, amount: x.amount, kind: x.kind, date: x.date, category: x.kind === 'traspaso' ? 'Traspaso' : x.kind === 'transfer_in' ? 'Ingreso' : guessCategory(x.desc.replace(/^Anulación · /, '')) }); added++; } return; }
     let category;
     if (x.kind === 'traspaso') category = 'Traspaso';
     else if (x.kind === 'transfer_in') category = 'Ingreso';
