@@ -198,7 +198,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
 .swatch { width: 34px; height: 34px; border-radius: 10px; border: 2px solid transparent; }
 .swatch.on { border-color: var(--text); }
 .inv-gain { font-size: 12px; font-weight: 800; }
-.toast { position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 200; background: var(--text); color: var(--bg); font-weight: 700; font-size: 14px; padding: 11px 16px; border-radius: 12px; max-width: calc(100% - 36px); text-align: center; }
+.tc-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; } .tc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; background: color-mix(in srgb, var(--bg) 55%, transparent); border: none; border-radius: var(--r-sm); padding: 11px 12px; font-size: 14px; font-weight: 700; text-align: left; } .tc-row .num { font-weight: 800; font-size: 16px; } .tc-row.total { background: color-mix(in srgb, var(--accent) 22%, transparent); } .check-row { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; margin-bottom: 14px; } .check-row input { width: 20px; height: 20px; accent-color: var(--accent); } .toast { position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 200; background: var(--text); color: var(--bg); font-weight: 700; font-size: 14px; padding: 11px 16px; border-radius: 12px; max-width: calc(100% - 36px); text-align: center; }
 .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .kv span:last-child { color: var(--muted); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -233,12 +233,13 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
   <!-- INICIO -->
   <section class="view" id="v-home">
     <div class="card hero">
-      <div class="label">Balance del mes</div>
+      <div class="label">Balance de la cuenta</div>
       <div class="big num" id="h-balance">$0</div>
       <div class="split">
         <div class="pill-stat"><div class="label">Ingresos</div><div class="v num pos" id="h-inc">$0</div></div>
         <div class="pill-stat"><div class="label">Gastos</div><div class="v num neg" id="h-exp">$0</div></div>
       </div>
+      <div class="tc-rows"><button class="tc-row" onclick="go('v-tc')"><span>💳 Tarjeta de crédito ›</span><span class="num neg" id="h-tc">$0</span></button><div class="tc-row total"><span>Balance después de la tarjeta</span><span class="num" id="h-after">$0</span></div></div>
     </div>
 
     <div class="section"><h2>En qué se fue</h2><button class="link" onclick="go('v-cats')">Detalle</button></div>
@@ -252,6 +253,15 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
       <div class="mini"><div class="s">Suscripciones</div><div class="v num" id="h-subs">$0</div></div>
       <div class="mini"><div class="s">Cuotas</div><div class="v num" id="h-cuotas">$0</div></div>
     </div>
+  </section>
+
+  <!-- TARJETA DE CRÉDITO -->
+  <section class="view" id="v-tc" hidden>
+    <div class="card hero"><div class="label">💳 Gastado con tarjeta de crédito</div><div class="big num" id="tc-total">$0</div><div class="split"><div class="pill-stat"><div class="label">Compras</div><div class="v num" id="tc-n">0</div></div><div class="pill-stat"><div class="label">Balance después</div><div class="v num" id="tc-after">$0</div></div></div></div>
+    <div class="section"><h2>Por categoría</h2></div>
+    <div class="card stack" id="tc-cats"></div>
+    <div class="section"><h2>Compras con tarjeta</h2></div>
+    <div id="tc-list"></div>
   </section>
 
   <!-- MOVIMIENTOS -->
@@ -324,6 +334,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
     <label class="field"><span>Descripción</span><input class="input" id="tx-desc" type="text" placeholder="Ej: Almuerzo, Uber, Copec" autocomplete="off" oninput="autoCat()"></label>
     <div class="field" id="tx-cat-field"><span>Categoría</span><div class="cat-grid" id="tx-cats"></div></div>
     <label class="field"><span>Fecha</span><input class="input" id="tx-date" type="date"></label>
+    <label class="check-row" id="tx-tc-row"><input type="checkbox" id="tx-tc"> 💳 Pagado con tarjeta de crédito</label>
     <div class="btns">
       <button class="btn" type="submit">Guardar</button>
       <button class="btn danger" type="button" id="tx-del" onclick="deleteTx()">Borrar movimiento</button>
@@ -399,6 +410,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
       <span class="e">📷</span><b>Foto o pantallazo</b><small>Boleta, cartola impresa o captura de la app del banco</small>
     </label>
     <input class="vh" id="imp-photo" type="file" accept="image/*" onchange="handleFile(this)">
+    <label class="check-row" style="margin-top:14px;"><input type="checkbox" id="imp-tc"> 💳 Es el estado de cuenta de la tarjeta de crédito</label>
     <div class="status" id="imp-status" hidden></div>
     <details class="more">
       <summary>O pegar texto</summary>
@@ -603,7 +615,7 @@ let currentView = 'v-home';
 function go(v) {
   currentView = v;
   document.querySelectorAll('.view').forEach(s => s.hidden = s.id !== v);
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.v === v || (v === 'v-cats' && b.dataset.v === 'v-home')));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.v === v || ((v === 'v-cats' || v === 'v-tc') && b.dataset.v === 'v-home')));
   $('month-bar').hidden = v === 'v-inv' || v === 'v-next';
   window.scrollTo(0, 0);
 }
@@ -613,7 +625,7 @@ function shiftMonth(n) { const d = new Date(viewMonth.y, viewMonth.m + n, 1); vi
 function render() {
   rebuildCats();
   const mn = new Date(viewMonth.y, viewMonth.m, 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' }); $('month-name').textContent = mn.charAt(0).toUpperCase() + mn.slice(1);
-  renderHome(); renderMovs(); renderCats(); renderNext(); renderCobrar(); renderInv();
+  renderHome(); renderMovs(); renderCats(); renderNext(); renderCobrar(); renderInv(); renderTC();
 }
 
 function txRow(t) {
@@ -626,10 +638,25 @@ function txRow(t) {
     <span class="tx-amt num ${t.amount > 0 ? 'pos' : ''}">${signed(t.amount)}</span></button>`;
 }
 
+function isTC(t) { return t.card === 'crédito' && !isSpecial(catOf(t)); }
+function tcTotal(txs) { return Math.max(0, txs.filter(isTC).reduce((s, t) => s - t.amount, 0)); }
+function renderTC() {
+  const txs = txOf(monthKey(0)), list = txs.filter(isTC).sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+  const { inc, exp } = totals(txs), tc = tcTotal(txs);
+  $('tc-total').textContent = clp(tc); $('tc-n').textContent = list.filter(t => t.amount < 0).length;
+  $('tc-after').textContent = (inc - exp < 0 ? '-' : '') + clp(inc - exp);
+  const by = expByCat(list), cats = EXPENSE_CATS.filter(c => by[c] > 0).sort((a, b) => by[b] - by[a]), max = Math.max(1, ...cats.map(c => by[c]));
+  $('tc-cats').innerHTML = cats.length ? cats.map(c => `<div class="bar-row"><div class="bar-top"><span>${CATS[c].e} ${esc(c)}</span><span class="num">${clp(by[c])}</span></div><div class="bar-track"><div class="bar-fill" style="width:${by[c] / max * 100}%;background:${CATS[c].c}"></div></div></div>`).join('') : '<div class="empty">Sin compras con tarjeta de crédito este mes.<br>Al registrar un gasto, marca 💳 Pagado con tarjeta de crédito.</div>';
+  $('tc-list').innerHTML = list.map(txRow).join('');
+}
 function renderHome() {
   const txs = txOf(monthKey(0));
   const { inc, exp } = totals(txs);
-  $('h-balance').textContent = (inc - exp < 0 ? '-' : '') + clp(inc - exp);
+  const tc = tcTotal(txs), acct = inc - (exp - tc);
+  $('h-balance').textContent = (acct < 0 ? '-' : '') + clp(acct);
+  $('h-tc').textContent = '-' + clp(tc);
+  $('h-after').textContent = (inc - exp < 0 ? '-' : '') + clp(inc - exp);
+  $('h-after').className = 'num ' + (inc - exp < 0 ? 'neg' : 'pos');
   $('h-inc').textContent = clp(inc);
   $('h-exp').textContent = clp(exp);
 
@@ -745,6 +772,7 @@ function editTx(id) {
   $('tx-amount').value = t ? clp(t.amount) : '';
   $('tx-desc').value = t ? t.desc : '';
   $('tx-date').value = t ? t.date : todayISO();
+  $('tx-tc').checked = !!(t && t.card === 'crédito');
   const tc = t ? catOf(t) : null;
   txCat = t && !isSpecial(tc) ? tc : EXPENSE_CATS[0];
   setKind(!t ? -1 : tc === 'Ingreso' ? 1 : tc === 'Traspaso' ? 0 : -1);
@@ -761,7 +789,7 @@ function saveTx() {
   if (txKind > 0) { amount = amt; category = 'Ingreso'; }
   else if (txKind === 0) { amount = prev && catOf(prev) === 'Traspaso' && prev.amount > 0 ? amt : -amt; category = 'Traspaso'; }
   else { amount = prev && !isSpecial(catOf(prev)) && prev.amount > 0 ? amt : -amt; category = txCat; }   // anulaciones conservan su signo
-  const data = { edited: true, date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category };
+  const data = { edited: true, card: $('tx-tc').checked ? 'crédito' : (prev && prev.card === 'débito' ? 'débito' : undefined), date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category };
   if (prev) Object.assign(prev, data);
   else state.transactions.push(Object.assign({ id: newId() }, data));
   closeSheet('sh-tx'); commit(); toast(editingTx ? 'Movimiento actualizado' : 'Movimiento guardado');
@@ -1031,13 +1059,13 @@ function mergeInbox(inbox) {
   inbox.forEach(x => {
     if (!x || !x.mailId || x.skip || (!x.amount && !x.usd)) return;
     const id = 'm_' + x.mailId;
-    if (deleted[id] || legacy.has(x.mailId)) return; if (have.has(id)) { const t = findTx(id); if (t && t.source === 'correo' && !t.edited && !x.usd && (t.desc !== x.desc || t.amount !== x.amount || t.kind !== x.kind || (x.kind === 'traspaso' && t.category === 'Traspaso'))) { Object.assign(t, { desc: x.desc, amount: x.amount, kind: x.kind, date: x.date, category: x.kind === 'traspaso' ? (x.amount > 0 ? 'Ingreso' : guessCategory(x.desc)) : x.kind === 'transfer_in' ? 'Ingreso' : guessCategory(x.desc.replace(/^Anulación · /, '')) }); added++; } return; }
+    if (deleted[id] || legacy.has(x.mailId)) return; if (have.has(id)) { const t = findTx(id); if (t && x.card && !t.card && !t.edited) { t.card = x.card; added++; } if (t && t.source === 'correo' && !t.edited && !x.usd && (t.desc !== x.desc || t.amount !== x.amount || t.kind !== x.kind || (x.kind === 'traspaso' && t.category === 'Traspaso'))) { Object.assign(t, { desc: x.desc, amount: x.amount, kind: x.kind, date: x.date, category: x.kind === 'traspaso' ? (x.amount > 0 ? 'Ingreso' : guessCategory(x.desc)) : x.kind === 'transfer_in' ? 'Ingreso' : guessCategory(x.desc.replace(/^Anulación · /, '')) }); added++; } return; }
     let category;
     if (x.kind === 'traspaso') category = x.amount > 0 ? 'Ingreso' : guessCategory(x.desc);
     else if (x.kind === 'transfer_in') category = 'Ingreso';
     else if (x.kind === 'anulacion') { const o = x.of && findTx('m_' + x.of); category = o ? catOf(o) : guessCategory(x.desc.replace(/^Anulación · /, '')); }
     else category = guessCategory(x.desc);
-    const usd = x.usd ? Math.abs(x.usd) : 0; state.transactions.push({ id, date: x.date, desc: usd ? x.desc + ' (USD ' + String(usd).replace('.', ',') + ')' : x.desc, amount: usd ? Math.sign(x.usd) * Math.round(usd * (state.usdRate || 890)) : x.amount, usd: x.usd || undefined, category, source: 'correo', kind: x.kind || 'compra' });
+    const usd = x.usd ? Math.abs(x.usd) : 0; state.transactions.push({ id, date: x.date, desc: usd ? x.desc + ' (USD ' + String(usd).replace('.', ',') + ')' : x.desc, amount: usd ? Math.sign(x.usd) * Math.round(usd * (state.usdRate || 890)) : x.amount, usd: x.usd || undefined, card: x.card || undefined, category, source: 'correo', kind: x.kind || 'compra' });
     have.add(id); added++;
   });
   return added;
@@ -1283,7 +1311,7 @@ function countReview() {
 function confirmImport() {
   const sel = pending.filter(r => r.on); if (!sel.length) return;
   const base = Date.now();
-  sel.forEach((r, i) => state.transactions.push({ id: base + i, date: r.date, desc: r.desc, amount: r.amount, category: r.category }));
+  const tcImp = $('imp-tc').checked; sel.forEach((r, i) => state.transactions.push({ id: base + i, date: r.date, desc: r.desc, amount: r.amount, category: r.category, card: tcImp && !isSpecial(r.category) ? 'crédito' : undefined }));
   pending = []; closeSheet('sh-review'); commit(); toast(sel.length + ' movimientos importados');
 }
 
