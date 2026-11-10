@@ -199,6 +199,25 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
 .swatch.on { border-color: var(--text); }
 .inv-gain { font-size: 12px; font-weight: 800; }
 .tc-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; } .tc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; background: color-mix(in srgb, var(--bg) 55%, transparent); border: none; border-radius: var(--r-sm); padding: 11px 12px; font-size: 14px; font-weight: 700; text-align: left; } .tc-row .num { font-weight: 800; font-size: 16px; } .tc-row.total { background: color-mix(in srgb, var(--accent) 22%, transparent); } .check-row { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; margin-bottom: 14px; } .check-row input { width: 20px; height: 20px; accent-color: var(--accent); } .toast { position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 200; background: var(--text); color: var(--bg); font-weight: 700; font-size: 14px; padding: 11px 16px; border-radius: 12px; max-width: calc(100% - 36px); text-align: center; }
+.vs { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; padding: 3px 7px; border-radius: 7px; white-space: nowrap; }
+.vs.up { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+.vs.down { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+.note { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 14px; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.note.warn { border-color: color-mix(in srgb, #fbbf24 55%, var(--line)); }
+.note .grow { flex: 1; min-width: 0; }
+.tag { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 1px 6px; border-radius: 6px; margin-left: 4px; background: var(--surface-2); color: var(--muted); }
+.tag.warn { background: color-mix(in srgb, #fbbf24 20%, transparent); color: #d97706; }
+.chart { display: flex; align-items: flex-end; gap: 8px; height: 170px; padding-top: 18px; }
+.chart .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; min-width: 0; }
+.chart .bar { width: 100%; max-width: 38px; border-radius: 7px 7px 3px 3px; background: color-mix(in srgb, var(--accent) 45%, var(--surface-2)); min-height: 3px; }
+.chart .col.cur .bar { background: linear-gradient(180deg, var(--accent-2), var(--accent)); }
+.chart .amt { font-size: 10px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.chart .mo { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: capitalize; }
+.group-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 16px 2px 8px; font-weight: 800; font-size: 15px; }
+.pend-item { background: var(--surface-2); border-radius: var(--r-sm); padding: 12px; }
+.pend-item + .pend-item { margin-top: 10px; }
+.pend-item .btns { margin-top: 10px; }
+.pend-item .btn { padding: 11px; font-size: 14px; }
 .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .kv span:last-child { color: var(--muted); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -217,6 +236,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
         </div>
       </div>
       <div style="display:flex; gap:8px;">
+        <button class="round-btn" onclick="go('v-cats')" aria-label="Mis finanzas">📊</button>
         <button class="round-btn" onclick="openSheet('sh-import')" aria-label="Importar">🪄</button>
         <button class="round-btn" onclick="openSettings()" aria-label="Ajustes">⚙️</button>
       </div>
@@ -232,6 +252,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
 <main class="wrap">
   <!-- INICIO -->
   <section class="view" id="v-home">
+    <div id="h-notes"></div>
     <div class="card hero">
       <div class="label">Balance de la cuenta</div>
       <div class="big num" id="h-balance">$0</div>
@@ -239,7 +260,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
         <div class="pill-stat"><div class="label">Ingresos</div><div class="v num pos" id="h-inc">$0</div></div>
         <div class="pill-stat"><div class="label">Gastos</div><div class="v num neg" id="h-exp">$0</div></div>
       </div>
-      <div class="tc-rows"><button class="tc-row" onclick="go('v-tc')"><span>💳 Tarjeta de crédito ›</span><span class="num neg" id="h-tc">$0</span></button><div class="tc-row total"><span>Balance después de la tarjeta</span><span class="num" id="h-after">$0</span></div></div>
+      <div class="tc-rows"><button class="tc-row" onclick="go('v-tc')"><span>💳 Tarjeta de crédito ›</span><span class="num neg" id="h-tc">$0</span></button><div class="tc-row total"><span>Balance después de la tarjeta</span><span class="num" id="h-after">$0</span></div><button class="tc-row" id="h-rendir-row" onclick="go('v-rendir')" hidden><span>🧾 Por rendir (fuera del balance) ›</span><span class="num" id="h-rendir">$0</span></button></div>
     </div>
 
     <div class="section"><h2>En qué se fue</h2><button class="link" onclick="go('v-cats')">Detalle</button></div>
@@ -264,9 +285,17 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
     <div id="tc-list"></div>
   </section>
 
+  <!-- RENDIR -->
+  <section class="view" id="v-rendir" hidden>
+    <div class="card hero"><div class="label">🧾 Por rendir</div><div class="big num" id="r-total">$0</div><p class="tx-sub" style="margin-top:6px">Gastos de la empresa. No cuentan en tu balance ni en la tarjeta.</p></div>
+    <div id="r-groups"></div>
+    <details class="more" id="r-done-box"><summary>Ya rendido</summary><div id="r-done" style="margin-top:10px"></div></details>
+  </section>
+
   <!-- MOVIMIENTOS -->
   <section class="view" id="v-movs" hidden>
-    <div class="search" style="margin-top:4px;"><input class="input" id="q" type="search" placeholder="Buscar movimiento" oninput="renderMovs()"></div>
+    <div class="search" style="margin-top:4px;"><input class="input" id="q" type="search" placeholder="Buscar comercio (ej: Uber)" oninput="renderMovs()"></div>
+    <div id="q-sum"></div>
     <div class="chips" id="mov-chips"></div>
     <div id="mov-list"></div>
   </section>
@@ -275,8 +304,8 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
   <section class="view" id="v-cats" hidden>
     <div class="section" style="margin-top:6px;"><h2>Gasto por categoría</h2><button class="link" onclick="openCats()">Editar categorías</button></div>
     <div class="card stack" id="cat-bars"></div>
-    <div class="section"><h2>Contra el mes anterior</h2></div>
-    <div class="card stack" id="cat-compare"></div>
+    <div class="section"><h2>Mes a mes</h2></div>
+    <div class="card"><div class="chips" id="fin-chips" style="padding-top:0"></div><div class="chart" id="fin-chart"></div><p class="tx-sub" id="fin-avg" style="margin-top:10px;text-align:center"></p></div>
   </section>
 
   <!-- PRÓXIMOS -->
@@ -330,11 +359,16 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
       <button type="button" class="i" onclick="setKind(1)">Ingreso</button>
       <button type="button" class="t" onclick="setKind(0)">Traspaso</button>
     </div>
+    <div class="note warn" id="tx-pend" hidden><span>⚠️</span><span class="grow" id="tx-pend-txt"></span><button type="button" class="link" onclick="keepPending(editingTx); closeSheet('sh-tx')">Mantener</button></div>
     <label class="field"><input class="input amount-input num" id="tx-amount" type="text" inputmode="numeric" placeholder="$0" autocomplete="off" oninput="fmtAmountInput(this)"></label>
     <label class="field"><span>Descripción</span><input class="input" id="tx-desc" type="text" placeholder="Ej: Almuerzo, Uber, Copec" autocomplete="off" oninput="autoCat()"></label>
     <div class="field" id="tx-cat-field"><span>Categoría</span><div class="cat-grid" id="tx-cats"></div></div>
     <label class="field"><span>Fecha</span><input class="input" id="tx-date" type="date"></label>
+    <label class="check-row" id="tx-ref-row"><input type="checkbox" id="tx-isref" onchange="$('tx-ref-field').hidden = !this.checked"> ↩️ Es una devolución</label>
+    <label class="field" id="tx-ref-field" hidden><span>¿Devolución de qué?</span><select class="input" id="tx-ref"></select></label>
     <label class="check-row" id="tx-tc-row"><input type="checkbox" id="tx-tc"> 💳 Pagado con tarjeta de crédito</label>
+    <label class="check-row"><input type="checkbox" id="tx-rendir" onchange="$('tx-trip-field').hidden = !this.checked"> 🧾 Rendir (no cuenta en el balance)</label>
+    <label class="field" id="tx-trip-field" hidden><span>Viaje o grupo (opcional)</span><input class="input" id="tx-trip" list="trips" placeholder="Ej: Viaje Asia" autocomplete="off"><datalist id="trips"></datalist></label>
     <div class="btns">
       <button class="btn" type="submit">Guardar</button>
       <button class="btn danger" type="button" id="tx-del" onclick="deleteTx()">Borrar movimiento</button>
@@ -353,6 +387,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
       <label class="field"><span>Día de cobro</span><input class="input" id="rec-day" type="number" min="1" max="31" inputmode="numeric" placeholder="12"></label>
     </div>
     <label class="field"><span>Ícono (emoji)</span><input class="input" id="rec-icon" maxlength="4" placeholder="🍿"></label>
+    <label class="check-row"><input type="checkbox" id="rec-rendir"> 🧾 Se rinde a la empresa (cada cobro queda fuera del balance)</label>
     <div class="btns">
       <button class="btn" type="submit">Guardar</button>
       <button class="btn danger" type="button" id="rec-del" onclick="deleteRecurring()">Borrar suscripción</button>
@@ -386,6 +421,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
     <h3 id="rcv-title">Plata por cobrar</h3>
     <label class="field"><span>¿Quién te debe?</span><input class="input" id="rcv-name" placeholder="Ej: Juan Pérez"></label>
     <label class="field"><span>¿Por qué?</span><input class="input" id="rcv-concept" placeholder="Ej: Asado, pádel"></label>
+    <label class="field"><span>Categoría del gasto (la devolución la descuenta de aquí)</span><select class="input" id="rcv-cat"></select></label>
     <label class="field"><span>Monto</span><input class="input num" id="rcv-amount" inputmode="numeric" oninput="fmtAmountInput(this)" placeholder="$12.000"></label>
     <div class="btns">
       <button class="btn" type="submit">Guardar</button>
@@ -427,7 +463,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
     <h3>Revisar movimientos</h3>
     <p class="help" id="rv-info"></p>
     <div id="rv-list"></div>
-    <div class="btns" style="margin-top:14px;"><button class="btn" id="rv-ok" onclick="confirmImport()">Importar</button></div>
+    <div class="btns" style="margin-top:14px;"><button class="btn" id="rv-ok" onclick="confirmImport()">Importar</button><button class="btn ghost" id="rv-skip" onclick="closeSheet('sh-review'); cartolaDone(reviewCartola); toast('Listo, no agregué nada')" hidden>No agregar nada</button></div>
   </div>
 </div>
 
@@ -438,7 +474,7 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
     <h3>Ajustes</h3>
     <div class="kv"><span>Sincronización</span><span id="st-sync">—</span></div>
     <div class="kv"><span>Última sincronización</span><span id="st-last">—</span></div>
-    <div class="kv"><span>Movimientos guardados</span><span id="st-count">0</span></div><label class="field" style="margin-top:12px;"><span>Valor del dólar para compras en USD</span><input class="input num" id="st-usd" inputmode="numeric" onchange="setUsd(this.value)"></label>
+    <div class="kv"><span>Movimientos guardados</span><span id="st-count">0</span></div><label class="field" style="margin-top:12px;"><span>RUT para abrir la cartola BCI (sin guión ni dígito verificador)</span><input class="input num" id="st-rut" inputmode="numeric" autocomplete="off" placeholder="Solo queda guardado en este aparato" onchange="setRut(this.value)"></label><label class="field"><span>Valor del dólar para compras en USD</span><input class="input num" id="st-usd" inputmode="numeric" onchange="setUsd(this.value)"></label>
     <details class="more">
       <summary>Conectar con Google Drive</summary>
       <p class="help" style="margin-top:12px;">Pega la dirección del servidor y la clave. Solo se hace una vez por aparato.</p>
@@ -503,6 +539,16 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
   </form>
 </div>
 
+<!-- Hoja: por revisar -->
+<div class="sheet-bg" id="sh-pend">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Por revisar</h3>
+    <p class="help">No cuentan en tu balance hasta que decidas.</p>
+    <div id="pend-list"></div>
+  </div>
+</div>
+
 <!-- Hoja: confirmar -->
 <div class="sheet-bg" id="sh-confirm">
   <div class="sheet">
@@ -538,7 +584,7 @@ function rebuildCats() {
   CATS['Traspaso'] = { e: '🔁', c: '#64748b' };
   EXPENSE_CATS = state.categories.map(c => c.name);
 }
-const LS_DATA = 'check_data', LS_CFG = 'check_config', LS_SYNC = 'check_last_sync';
+const LS_DATA = 'check_data', LS_CFG = 'check_config', LS_SYNC = 'check_last_sync', LS_RUT = 'check_rut';
 
 const SAMPLE = {
   updatedAt: 0,
@@ -564,6 +610,8 @@ function normalize(s) {
   s.deleted = s.deleted || {};
   s.recurring = s.recurring.map(r => Object.assign({}, r, { day: typeof r.day === 'number' ? r.day : (parseInt(r.day, 10) || 1) }));
   s.installments = s.installments.map(i => Object.assign({}, i, { cuota: +i.cuota || 0, totalCuotas: +i.totalCuotas || 1, current: +i.current || 0 }));
+  if (!s.catMama) { if (!s.categories.some(c => c.orig === 'Gastos mamá')) s.categories.push({ name: 'Gastos mamá', e: '👵', c: '#60a5fa', orig: 'Gastos mamá', split: ['Constanza', 'María de los Ángeles'] }); s.catMama = 1; }
+  s.learned = s.learned || {}; s.cartolasDone = s.cartolasDone || [];
   return s;
 }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -601,6 +649,12 @@ function isSpecial(c) { return c === 'Ingreso' || c === 'Traspaso'; }
 // Gastos por categoría: compras restan, anulaciones/devoluciones (monto positivo en categoría de gasto) suman de vuelta.
 function expByCat(txs) { const o = {}; EXPENSE_CATS.forEach(c => o[c] = 0); txs.forEach(t => { const c = catOf(t); if (!isSpecial(c)) o[c] -= t.amount; else if (c === 'Ingreso' && t.amount < 0) o[otrosName()] -= t.amount; }); EXPENSE_CATS.forEach(c => o[c] = Math.max(0, o[c])); return o; }
 function totals(txs) { let inc = 0, exp = 0; txs.forEach(t => { const c = catOf(t); if (c === 'Traspaso') return; if (c === 'Ingreso') { if (t.amount > 0) inc += t.amount; else exp -= t.amount; } else exp -= t.amount; }); return { inc, exp: Math.max(0, exp) }; }
+// Lo que cuenta en el balance: sin los "por revisar" ni lo que se rinde a la empresa.
+function inBal(t) { return !t.pending && !t.rendir; }
+function balOf(key) { return txOf(key).filter(inBal); }
+function splitOf(cat) { const c = state.categories.find(x => x.name === cat); return c && Array.isArray(c.split) && c.split.length ? c.split : null; }
+function shortClp(v) { v = Math.abs(v); return v >= 1e6 ? '$' + (v / 1e6).toFixed(1).replace('.', ',') + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'k' : clp(v); }
+function fmtDay(d) { return new Date(d + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }); }
 function newId() { return Date.now() + Math.floor(Math.random() * 1000); }
 
 let toastT;
@@ -615,7 +669,7 @@ let currentView = 'v-home';
 function go(v) {
   currentView = v;
   document.querySelectorAll('.view').forEach(s => s.hidden = s.id !== v);
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.v === v || ((v === 'v-cats' || v === 'v-tc') && b.dataset.v === 'v-home')));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('on', b.dataset.v === v || ((v === 'v-cats' || v === 'v-tc' || v === 'v-rendir') && b.dataset.v === 'v-home')));
   $('month-bar').hidden = v === 'v-inv' || v === 'v-next';
   window.scrollTo(0, 0);
 }
@@ -625,7 +679,7 @@ function shiftMonth(n) { const d = new Date(viewMonth.y, viewMonth.m + n, 1); vi
 function render() {
   rebuildCats();
   const mn = new Date(viewMonth.y, viewMonth.m, 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' }); $('month-name').textContent = mn.charAt(0).toUpperCase() + mn.slice(1);
-  renderHome(); renderMovs(); renderCats(); renderNext(); renderCobrar(); renderInv(); renderTC();
+  renderHome(); renderMovs(); renderCats(); renderNext(); renderCobrar(); renderInv(); renderTC(); renderRendir(); renderNotes();
 }
 
 function txRow(t) {
@@ -634,14 +688,14 @@ function txRow(t) {
   return `<button class="tx" onclick="editTx('${esc(String(t.id))}')">
     <span class="cat-ico" style="background:${c.c}22">${c.e}</span>
     <span class="tx-body"><span class="tx-title" style="display:block">${esc(t.desc)}</span>
-    <span class="tx-sub" style="display:block">${esc(catOf(t))} · ${d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}${t.source === 'correo' ? ' · ✉️' : ''}</span></span>
+    <span class="tx-sub" style="display:block">${t.refund ? '↩️ ' : ''}${esc(catOf(t))} · ${d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}${t.source === 'correo' ? ' · ✉️' : ''}${t.pending ? '<span class="tag warn">por revisar</span>' : ''}${t.rendir ? '<span class="tag">' + (t.rendido ? 'rendido' : 'rendir') + '</span>' : ''}</span></span>
     <span class="tx-amt num ${t.amount > 0 ? 'pos' : ''}">${signed(t.amount)}</span></button>`;
 }
 
 function isTC(t) { return t.card === 'crédito' && !isSpecial(catOf(t)); }
 function tcTotal(txs) { return Math.max(0, txs.filter(isTC).reduce((s, t) => s - t.amount, 0)); }
 function renderTC() {
-  const txs = txOf(monthKey(0)), list = txs.filter(isTC).sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+  const txs = balOf(monthKey(0)), list = txs.filter(isTC).sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
   const { inc, exp } = totals(txs), tc = tcTotal(txs);
   $('tc-total').textContent = clp(tc); $('tc-n').textContent = list.filter(t => t.amount < 0).length;
   $('tc-after').textContent = (inc - exp < 0 ? '-' : '') + clp(inc - exp);
@@ -650,7 +704,7 @@ function renderTC() {
   $('tc-list').innerHTML = list.map(txRow).join('');
 }
 function renderHome() {
-  const txs = txOf(monthKey(0));
+  const all = txOf(monthKey(0)), txs = all.filter(inBal);
   const { inc, exp } = totals(txs);
   const tc = tcTotal(txs), acct = inc - (exp - tc);
   $('h-balance').textContent = (acct < 0 ? '-' : '') + clp(acct);
@@ -673,7 +727,7 @@ function renderHome() {
       <div class="legend">${items.slice(0, 6).map(([c, v]) => `<div class="legend-row"><span class="legend-dot" style="background:${CATS[c].c}"></span><span class="legend-name">${CATS[c].e} ${esc(c)}</span><span class="legend-pct num">${Math.round(v / exp * 100)}%</span></div>`).join('')}</div></div>`;
   }
 
-  const recent = txs.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 5);
+  const recent = all.slice().sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id))).slice(0, 5);
   $('h-recent').innerHTML = recent.length ? recent.map(txRow).join('') : '<div class="empty">Sin movimientos este mes.</div>';
   $('h-subs').textContent = clp(state.recurring.reduce((s, r) => s + (+r.amount || 0), 0));
   $('h-cuotas').textContent = clp(state.installments.filter(i => i.current < i.totalCuotas).reduce((s, i) => s + i.cuota, 0));
@@ -686,8 +740,14 @@ function renderMovs() {
   $('mov-chips').querySelectorAll('.chip').forEach(b => b.onclick = () => { movFilter = chips[+b.dataset.i]; renderMovs(); });
   if (!chips.includes(movFilter)) movFilter = 'Todas';
   const q = ($('q').value || '').trim().toLowerCase();
-  const txs = txOf(monthKey(0)).filter(t => (movFilter === 'Todas' || catOf(t) === movFilter) && (!q || String(t.desc).toLowerCase().includes(q)))
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  let txs = (q ? state.transactions : txOf(monthKey(0))).filter(t => (movFilter === 'Todas' || catOf(t) === movFilter) && (!q || String(t.desc).toLowerCase().includes(q)))
+    .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
+  if (q) {
+    const y = String(viewMonth.y), inY = txs.filter(t => t.date.startsWith(y) && inBal(t) && !isSpecial(catOf(t)));
+    const spent = -inY.reduce((s, t) => s + t.amount, 0);
+    $('q-sum').innerHTML = txs.length ? `<div class="card" style="margin-top:10px;padding:14px 16px"><div class="label">Gastado en "${esc(q)}" en ${y}</div><div class="num" style="font-size:24px;font-weight:800;margin-top:4px">${clp(Math.max(0, spent))}</div><div class="tx-sub">${inY.length} ${inY.length === 1 ? 'compra' : 'compras'} este año · buscando en todos los meses</div></div>` : '';
+    txs = txs.slice(0, 150);
+  } else $('q-sum').innerHTML = '';
   if (!txs.length) { $('mov-list').innerHTML = '<div class="empty">No hay movimientos que coincidan.</div>'; return; }
   const groups = {};
   txs.forEach(t => (groups[t.date] = groups[t.date] || []).push(t));
@@ -698,21 +758,31 @@ function renderMovs() {
   }).join('');
 }
 
+function vsBadge(cur, prev) {
+  if (!prev || !cur || cur === prev) return '';
+  const pct = Math.round((cur - prev) / prev * 100); if (!pct) return '';
+  const mo = new Date(viewMonth.y, viewMonth.m - 1, 1).toLocaleDateString('es-CL', { month: 'short' }).replace('.', '');
+  return `<span class="vs ${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '↗ +' : '↘ '}${pct}% vs ${mo}</span>`;
+}
+let finCat = 'Todas';
+function renderFin() {
+  const opts = ['Todas', ...EXPENSE_CATS]; if (!opts.includes(finCat)) finCat = 'Todas';
+  $('fin-chips').innerHTML = opts.map((c, i) => `<button class="chip ${c === finCat ? 'on' : ''}" data-i="${i}">${c === 'Todas' ? 'Todas' : CATS[c].e + ' ' + esc(c)}</button>`).join('');
+  $('fin-chips').querySelectorAll('.chip').forEach(b => b.onclick = () => { finCat = opts[+b.dataset.i]; renderFin(); });
+  const months = [-5, -4, -3, -2, -1, 0].map(o => { const k = monthKey(o), txs = balOf(k); return { o, v: finCat === 'Todas' ? totals(txs).exp : expByCat(txs)[finCat] || 0, mo: new Date(viewMonth.y, viewMonth.m + o, 1).toLocaleDateString('es-CL', { month: 'short' }).replace('.', '') }; });
+  const max = Math.max(1, ...months.map(m => m.v));
+  $('fin-chart').innerHTML = months.map(m => `<div class="col ${m.o === 0 ? 'cur' : ''}"><span class="amt num">${m.v ? shortClp(m.v) : ''}</span><div class="bar" style="height:${Math.max(2, m.v / max * 120)}px"></div><span class="mo">${m.mo}</span></div>`).join('');
+  const past = months.filter(m => m.o < 0 && m.v > 0);
+  $('fin-avg').textContent = past.length ? 'Promedio de los meses anteriores: ' + clp(past.reduce((s, m) => s + m.v, 0) / past.length) : '';
+}
 function renderCats() {
-  const cur = expByCat(txOf(monthKey(0))), prev = expByCat(txOf(monthKey(-1)));
+  const cur = expByCat(balOf(monthKey(0))), prev = expByCat(balOf(monthKey(-1)));
   const total = EXPENSE_CATS.reduce((s, c) => s + cur[c], 0);
   const max = Math.max(1, ...EXPENSE_CATS.map(c => cur[c]));
   $('cat-bars').innerHTML = EXPENSE_CATS.slice().sort((a, b) => cur[b] - cur[a]).map(c => `
-    <div class="bar-row"><div class="bar-top"><span>${CATS[c].e} ${esc(c)}</span><span class="num">${clp(cur[c])} <span style="color:var(--muted);font-weight:600">${total ? Math.round(cur[c] / total * 100) : 0}%</span></span></div>
+    <div class="bar-row"><div class="bar-top"><span>${CATS[c].e} ${esc(c)} ${vsBadge(cur[c], prev[c])}</span><span class="num">${clp(cur[c])} <span style="color:var(--muted);font-weight:600">${total ? Math.round(cur[c] / total * 100) : 0}%</span></span></div>
     <div class="bar-track"><div class="bar-fill" style="width:${cur[c] / max * 100}%;background:${CATS[c].c}"></div></div></div>`).join('');
-  const rows = EXPENSE_CATS.filter(c => cur[c] || prev[c]).map(c => {
-    const d = cur[c] - prev[c];
-    let txt = '<span class="delta" style="color:var(--muted)">igual</span>';
-    if (prev[c] > 0 && d) txt = `<span class="delta ${d > 0 ? 'neg' : 'pos'}">${d > 0 ? '▲' : '▼'} ${Math.abs(Math.round(d / prev[c] * 100))}%</span>`;
-    else if (!prev[c] && cur[c]) txt = '<span class="delta neg">nuevo</span>';
-    return `<div class="bar-top"><span>${CATS[c].e} ${esc(c)}</span><span style="display:flex;gap:10px;align-items:center"><span class="num" style="color:var(--muted);font-size:12px">${clp(prev[c])} → ${clp(cur[c])}</span>${txt}</span></div>`;
-  });
-  $('cat-compare').innerHTML = rows.length ? rows.join('') : '<div class="empty">Sin gastos para comparar.</div>';
+  renderFin();
 }
 
 function nextCharge(day) {
@@ -740,12 +810,61 @@ function renderNext() {
 }
 
 function renderCobrar() {
-  const list = state.receivables.slice().sort((a, b) => a.paid - b.paid || b.id - a.id);
-  $('c-total').textContent = clp(list.filter(r => !r.paid).reduce((s, r) => s + r.amount, 0));
-  $('c-list').innerHTML = list.length ? list.map(r => `<button class="tx" onclick="editReceivable(${r.id})">
+  const list = state.receivables.slice().sort((a, b) => (a.paid ? 1 : 0) - (b.paid ? 1 : 0) || String(b.date || b.id).localeCompare(String(a.date || a.id)));
+  $('c-total').textContent = clp(list.filter(r => !r.paid).reduce((s, r) => s + r.amount - (r.got || 0), 0));
+  $('c-list').innerHTML = list.length ? list.map(r => `<button class="tx" onclick="editReceivable('${esc(String(r.id))}')">
     <span class="cat-ico" style="background:var(--surface-2)">${r.paid ? '✅' : '⏳'}</span>
-    <span class="tx-body"><span class="tx-title" style="display:block">${esc(r.name)}</span><span class="tx-sub" style="display:block">${esc(r.concept || '—')} · <span class="badge ${r.paid ? 'paid' : 'pending'}">${r.paid ? 'Pagado' : 'Pendiente'}</span></span></span>
+    <span class="tx-body"><span class="tx-title" style="display:block">${esc(r.name)}</span><span class="tx-sub" style="display:block">${esc(r.concept || '—')} · <span class="badge ${r.paid ? 'paid' : 'pending'}">${r.paid ? 'Pagado' : r.got ? 'Abonó ' + clp(r.got) : 'Pendiente'}</span></span></span>
     <span class="tx-amt num">${clp(r.amount)}</span></button>`).join('') : '<div class="empty">Nadie te debe plata 🎉</div>';
+}
+
+// ================= Avisos del inicio =================
+let cartolaNote = '';
+function renderNotes() {
+  const out = [];
+  const pend = state.transactions.filter(t => t.pending);
+  if (pend.length) out.push(`<button class="note warn" onclick="openPending()"><span>⚠️</span><span class="grow">${pend.length === 1 ? '1 movimiento por revisar' : pend.length + ' movimientos por revisar'}</span><span>›</span></button>`);
+  if (cartolaNote) out.push(cartolaNote);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  state.recurring.forEach(r => { const days = Math.round((nextCharge(r.day) - today) / 864e5); if (days <= 1) out.push(`<div class="note"><span>🔔</span><span class="grow">${days ? 'Mañana' : 'Hoy'} se cobra ${esc(r.title)}</span><span class="num">${clp(r.amount)}</span></div>`); });
+  $('h-notes').innerHTML = out.join('');
+}
+
+// ================= Por revisar (posibles repetidos) =================
+function openPending() { drawPending(); openSheet('sh-pend'); }
+function drawPending() {
+  const list = state.transactions.filter(t => t.pending).sort((a, b) => b.date.localeCompare(a.date));
+  if (!list.length) { closeSheet('sh-pend'); return; }
+  $('pend-list').innerHTML = list.map(t => {
+    const o = t.dupOf && findTx(t.dupOf), dup = t.pending === 'dup';
+    const why = dup ? (o ? 'Parecido a «' + esc(o.desc) + '» ' + signed(o.amount) + ' del ' + fmtDay(o.date) + '.' : 'Posible monto repetido.') : 'El correo del banco no se entendió del todo: revisa el monto y si es gasto o ingreso.';
+    return `<div class="pend-item"><div class="bar-top"><span class="tx-title">${esc(t.desc)}</span><span class="num ${t.amount > 0 ? 'pos' : ''}">${signed(t.amount)}</span></div>
+      <div class="tx-sub" style="margin-top:4px">${fmtDay(t.date)}${t.source === 'correo' ? ' · ✉️' : ''} · ${why}</div>
+      <div class="btns h"><button class="btn danger" data-del="${esc(String(t.id))}">${dup ? 'Es repetido · borrar' : 'Borrar'}</button><button class="btn ghost" data-keep="${esc(String(t.id))}">${dup ? 'Son distintos' : 'Está bien'}</button></div>
+      ${dup ? '' : `<button class="link" style="margin-top:8px" data-edit="${esc(String(t.id))}">Editar antes de confirmar</button>`}</div>`;
+  }).join('');
+  $('pend-list').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { state.transactions = state.transactions.filter(x => String(x.id) !== b.dataset.del); commit(); toast('Borrado'); drawPending(); });
+  $('pend-list').querySelectorAll('[data-keep]').forEach(b => b.onclick = () => { keepPending(b.dataset.keep); drawPending(); });
+  $('pend-list').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { closeSheet('sh-pend'); editTx(b.dataset.edit); });
+}
+function keepPending(id) { const t = findTx(id); if (!t) return; delete t.pending; delete t.dupOf; commit(); toast('Listo, cuenta en tu balance'); }
+
+// ================= Rendir =================
+let rGroups = [];
+function renderRendir() {
+  const all = state.transactions.filter(t => t.rendir && !t.pending);
+  const open = all.filter(t => !t.rendido), done = all.filter(t => t.rendido);
+  const net = list => -list.reduce((s, t) => s + t.amount, 0);
+  const total = net(open);
+  $('r-total').textContent = (total < 0 ? '-' : '') + clp(total);
+  $('h-rendir').textContent = clp(total); $('h-rendir-row').hidden = !open.length;
+  const groupsOf = list => { const g = {}; list.forEach(t => (g[t.trip || ''] = g[t.trip || ''] || []).push(t)); return Object.keys(g).sort((a, b) => (a === '') - (b === '') || a.localeCompare(b)).map(k => ({ name: k, txs: g[k].sort((a, b) => b.date.localeCompare(a.date)) })); };
+  rGroups = groupsOf(open);
+  $('r-groups').innerHTML = rGroups.length ? rGroups.map((g, i) => `<div class="group-head"><span>${g.name ? '✈️ ' + esc(g.name) : '🧾 Sin viaje'}</span><span class="num">${clp(net(g.txs))}</span></div>${g.txs.map(txRow).join('')}<div class="btns" style="margin-top:10px"><button class="btn ghost" data-i="${i}">Marcar ${g.name ? '"' + esc(g.name) + '"' : 'estos'} como rendido</button></div>`).join('')
+    : '<div class="empty">Nada por rendir.<br>Al registrar o editar un movimiento, marca 🧾 Rendir.</div>';
+  $('r-groups').querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const g = rGroups[+b.dataset.i]; g.txs.forEach(t => t.rendido = true); commit(); toast('Marcado como rendido'); });
+  $('r-done-box').hidden = !done.length;
+  $('r-done').innerHTML = groupsOf(done).map(g => `<div class="group-head"><span>${g.name ? '✈️ ' + esc(g.name) : '🧾 Sin viaje'}</span><span class="num">${clp(net(g.txs))}</span></div>${g.txs.map(txRow).join('')}`).join('');
 }
 
 // ================= Editar movimiento =================
@@ -756,6 +875,14 @@ function setKind(k) {
   $('tx-kind').children[1].classList.toggle('on', k > 0);
   $('tx-kind').children[2].classList.toggle('on', k === 0);
   $('tx-cat-field').hidden = k >= 0;
+  $('tx-ref-row').hidden = k <= 0; $('tx-ref-field').hidden = k <= 0 || !$('tx-isref').checked;
+  $('tx-tc-row').hidden = k > 0;
+}
+function fillRefOptions(t) {
+  const open = state.receivables.filter(r => !r.paid || (t && String(t.rcv) === String(r.id)));
+  $('tx-ref').innerHTML = (open.length ? '<optgroup label="Por cobrar">' + open.map(r => `<option value="r:${esc(String(r.id))}">${esc(r.name)} · ${esc(r.concept || '')} (${clp(r.amount - (r.got || 0))})</option>`).join('') + '</optgroup>' : '')
+    + '<optgroup label="Categoría del gasto">' + EXPENSE_CATS.map(c => `<option value="c:${esc(c)}">${CATS[c].e} ${esc(c)}</option>`).join('') + '</optgroup>';
+  if (t && t.refund) $('tx-ref').value = t.rcv ? 'r:' + t.rcv : 'c:' + catOf(t);
 }
 function drawCats() {
   $('tx-cats').innerHTML = EXPENSE_CATS.map((c, i) => `<button type="button" class="cat-opt ${c === txCat ? 'on' : ''}" data-i="${i}"><span class="e">${CATS[c].e}</span>${esc(c)}</button>`).join('') + `<button type="button" class="cat-opt" id="tx-cat-edit"><span class="e">✏️</span>Editar</button>`;
@@ -773,9 +900,13 @@ function editTx(id) {
   $('tx-desc').value = t ? t.desc : '';
   $('tx-date').value = t ? t.date : todayISO();
   $('tx-tc').checked = !!(t && t.card === 'crédito');
+  $('tx-rendir').checked = !!(t && t.rendir); $('tx-trip').value = t && t.trip || ''; $('tx-trip-field').hidden = !(t && t.rendir);
+  $('trips').innerHTML = Array.from(new Set(state.transactions.map(x => x.trip).filter(Boolean))).map(x => `<option value="${esc(x)}">`).join('');
+  $('tx-isref').checked = !!(t && t.refund); fillRefOptions(t);
+  $('tx-pend').hidden = !(t && t.pending); if (t && t.pending) $('tx-pend-txt').textContent = t.pending === 'dup' ? 'Posible monto repetido. No cuenta hasta que lo confirmes.' : 'Por revisar: confirma monto y tipo.';
   const tc = t ? catOf(t) : null;
   txCat = t && !isSpecial(tc) ? tc : EXPENSE_CATS[0];
-  setKind(!t ? -1 : tc === 'Ingreso' ? 1 : tc === 'Traspaso' ? 0 : -1);
+  setKind(!t ? -1 : (tc === 'Ingreso' || t.refund) ? 1 : tc === 'Traspaso' ? 0 : -1);
   drawCats();
   $('tx-del').hidden = !t;
   openSheet('sh-tx');
@@ -785,11 +916,19 @@ function saveTx() {
   const amt = parseMoney($('tx-amount').value), desc = $('tx-desc').value.trim();
   if (!amt) { toast('Escribe un monto'); return; }
   const prev = editingTx != null ? findTx(editingTx) : null;
-  let amount, category;
-  if (txKind > 0) { amount = amt; category = 'Ingreso'; }
+  let amount, category, rcv, refund;
+  if (txKind > 0) {
+    amount = amt; category = 'Ingreso';
+    const ref = $('tx-isref').checked ? $('tx-ref').value : '';
+    if (ref.startsWith('r:')) { const r = state.receivables.find(x => String(x.id) === ref.slice(2)); if (r) { rcv = r.id; refund = true; category = r.cat && CATS[r.cat] && !isSpecial(r.cat) ? r.cat : otrosName(); } }
+    else if (ref.startsWith('c:') && CATS[ref.slice(2)]) { refund = true; category = ref.slice(2); }
+  }
   else if (txKind === 0) { amount = prev && catOf(prev) === 'Traspaso' && prev.amount > 0 ? amt : -amt; category = 'Traspaso'; }
   else { amount = prev && !isSpecial(catOf(prev)) && prev.amount > 0 ? amt : -amt; category = txCat; }   // anulaciones conservan su signo
-  const data = { edited: true, card: $('tx-tc').checked ? 'crédito' : (prev && prev.card === 'débito' ? 'débito' : undefined), date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category };
+  const rendir = $('tx-rendir').checked;
+  const data = { edited: true, card: txKind < 0 && $('tx-tc').checked ? 'crédito' : (prev && prev.card === 'débito' ? 'débito' : undefined), date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category,
+    refund, rcv, rendir: rendir || undefined, trip: rendir ? $('tx-trip').value.trim() || undefined : undefined, rendido: rendir && prev && prev.rendido ? true : undefined };
+  if (txKind < 0 && catTouched && desc && !splitOf(txCat) && guessCategory(desc) !== txCat) learnedKeys(desc).forEach(k => { if (k) state.learned[k] = txCat; });   // aprende la categoría de este comercio
   if (prev) Object.assign(prev, data);
   else state.transactions.push(Object.assign({ id: newId() }, data));
   closeSheet('sh-tx'); commit(); toast(editingTx ? 'Movimiento actualizado' : 'Movimiento guardado');
@@ -805,13 +944,13 @@ let editingRec = null;
 function editRecurring(id) {
   const r = id ? state.recurring.find(x => x.id === id) : null; editingRec = r ? r.id : null;
   $('rec-title').textContent = r ? 'Editar suscripción' : 'Nueva suscripción';
-  $('rec-name').value = r ? r.title : ''; $('rec-amount').value = r ? clp(r.amount) : ''; $('rec-day').value = r ? r.day : ''; $('rec-icon').value = r ? r.icon || '' : '';
+  $('rec-name').value = r ? r.title : ''; $('rec-amount').value = r ? clp(r.amount) : ''; $('rec-day').value = r ? r.day : ''; $('rec-icon').value = r ? r.icon || '' : ''; $('rec-rendir').checked = !!(r && r.rendir);
   $('rec-del').hidden = !r; openSheet('sh-rec');
 }
 function saveRecurring() {
   const title = $('rec-name').value.trim(), amount = parseMoney($('rec-amount').value), day = Math.min(31, Math.max(1, parseInt($('rec-day').value, 10) || 1));
   if (!title || !amount) { toast('Completa nombre y monto'); return; }
-  const data = { title, amount, day, icon: $('rec-icon').value.trim() || '🔁' };
+  const data = { title, amount, day, icon: $('rec-icon').value.trim() || '🔁', rendir: $('rec-rendir').checked || undefined };
   if (editingRec) Object.assign(state.recurring.find(x => x.id === editingRec), data); else state.recurring.push(Object.assign({ id: newId() }, data));
   closeSheet('sh-rec'); commit(); toast('Suscripción guardada');
 }
@@ -838,7 +977,8 @@ function deleteInstallment() { state.installments = state.installments.filter(x 
 // ================= Por cobrar =================
 let editingRcv = null;
 function editReceivable(id) {
-  const r = id ? state.receivables.find(x => x.id === id) : null; editingRcv = r ? r.id : null;
+  const r = id != null ? state.receivables.find(x => String(x.id) === String(id)) : null; editingRcv = r ? r.id : null;
+  $('rcv-cat').innerHTML = EXPENSE_CATS.map(c => `<option ${(r && r.cat ? r.cat : otrosName()) === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
   $('rcv-title').textContent = r ? 'Editar cobro' : 'Plata por cobrar';
   $('rcv-name').value = r ? r.name : ''; $('rcv-concept').value = r ? r.concept || '' : ''; $('rcv-amount').value = r ? clp(r.amount) : '';
   $('rcv-toggle').hidden = !r; $('rcv-toggle').textContent = r && r.paid ? 'Marcar como pendiente' : 'Marcar como pagado';
@@ -847,8 +987,8 @@ function editReceivable(id) {
 function saveReceivable() {
   const name = $('rcv-name').value.trim(), amount = parseMoney($('rcv-amount').value);
   if (!name || !amount) { toast('Completa nombre y monto'); return; }
-  const data = { name, concept: $('rcv-concept').value.trim(), amount };
-  if (editingRcv) Object.assign(state.receivables.find(x => x.id === editingRcv), data); else state.receivables.push(Object.assign({ id: newId(), paid: false }, data));
+  const data = { name, concept: $('rcv-concept').value.trim(), amount, cat: $('rcv-cat').value };
+  if (editingRcv != null) Object.assign(state.receivables.find(x => x.id === editingRcv), data); else state.receivables.push(Object.assign({ id: newId(), paid: false, date: todayISO() }, data));
   closeSheet('sh-rcv'); commit(); toast('Guardado');
 }
 function toggleReceivable() { const r = state.receivables.find(x => x.id === editingRcv); if (r) r.paid = !r.paid; closeSheet('sh-rcv'); commit(); }
@@ -988,13 +1128,37 @@ function mergeStates(a, b) {
   out.categories = ((b.catsU || 0) >= (a.catsU || 0) ? b.categories : a.categories) || a.categories || b.categories;
   out.catsU = Math.max(a.catsU || 0, b.catsU || 0);
   out.v = Math.max(a.v || 0, b.v || 0);
+  out.learned = Object.assign({}, a.learned || {}, b.learned || {});
+  out.cartolasDone = Array.from(new Set((a.cartolasDone || []).concat(b.cartolasDone || []))).slice(-50);
   out.mailSeen = out.v >= 3 ? [] : Array.from(new Set((a.mailSeen || []).concat(b.mailSeen || []))).slice(-1500);
   out.deleted = deleted;
   out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
   return out;
 }
 function setState(s) { state = normalize(s); lsSet(LS_DATA, JSON.stringify(state)); takeSnap(); render(); }
+// Gastos que se dividen (Gastos mamá) generan "por cobrar" solos; las devoluciones los van saldando.
+function syncLinks() {
+  state.deleted = state.deleted || {};
+  const txById = {}; state.transactions.forEach(t => txById[String(t.id)] = t);
+  const splitTx = t => t && t.amount < 0 && !t.rendir && !t.pending && splitOf(t.category);
+  state.transactions.forEach(t => {
+    const sp = splitTx(t); if (!sp) return;
+    const share = Math.round(-t.amount / (sp.length + 1));
+    sp.forEach((name, i) => {
+      const id = 's_' + t.id + '_' + i;
+      if (state.deleted[id] >= (t.u || 0)) return;   // la borraste tú
+      const r = state.receivables.find(x => String(x.id) === id);
+      if (!r) state.receivables.push({ id, name, concept: t.desc, amount: share, paid: false, cat: t.category, tx: String(t.id), date: t.date });
+      else if (!r.got && (r.amount !== share || r.concept !== t.desc || r.name !== name)) Object.assign(r, { amount: share, concept: t.desc, name, cat: t.category });
+    });
+  });
+  const paidBy = {}; state.transactions.forEach(t => { if (t.rcv != null) paidBy[String(t.rcv)] = (paidBy[String(t.rcv)] || 0) + Math.abs(t.amount); });
+  state.receivables = state.receivables.filter(r => !r.tx || splitTx(txById[r.tx]) || r.paid || paidBy[String(r.id)]);
+  state.receivables.forEach(r => { const got = paidBy[String(r.id)] || 0; if (got) { r.got = got; r.paid = got >= r.amount; } else if (r.got) { delete r.got; r.paid = false; } });
+}
 function commit() {
+  stampChanges();
+  syncLinks();
   stampChanges();
   lsSet(LS_DATA, JSON.stringify(state));
   render();
@@ -1042,7 +1206,8 @@ async function pull() {
     const merged = remoteObj && !state.updatedAt ? remoteObj : mergeStates(remoteObj || {}, state);
     setState(merged);
     const added = mergeInbox(r.inbox || []);
-    if (added) { stampChanges(); lsSet(LS_DATA, JSON.stringify(state)); render(); toast(added === 1 ? '1 movimiento agregado desde tu correo' : added + ' movimientos agregados desde tu correo'); }
+    checkCartolas(r.cartolas || []);
+    if (added) { stampChanges(); syncLinks(); stampChanges(); lsSet(LS_DATA, JSON.stringify(state)); render(); toast(added === 1 ? '1 movimiento agregado desde tu correo' : added + ' movimientos agregados desde tu correo'); }
     if (added || pendingPush || JSON.stringify(normalize(JSON.parse(remoteText) || {})) !== JSON.stringify(state)) await push();
     else { lsSet(LS_SYNC, String(Date.now())); setSync('Guardado en Drive', 'ok'); }
   } catch (e) { setSync(e.message === 'unauthorized' ? 'Clave incorrecta' : 'No se pudo conectar', 'warn'); }
@@ -1057,18 +1222,36 @@ function mergeInbox(inbox) {
   inbox.forEach(x => { if (x && x.mailId) byMail[x.mailId] = x; });
   let added = 0;
   inbox.forEach(x => {
+    if (x && x.skip && x.dupOf) { const d = findTx('m_' + x.mailId); if (d && d.source === 'correo' && !d.edited) { state.transactions = state.transactions.filter(t => t !== d); state.deleted = state.deleted || {}; state.deleted[String(d.id)] = Date.now(); added++; } return; }
     if (!x || !x.mailId || x.skip || (!x.amount && !x.usd)) return;
     const id = 'm_' + x.mailId;
-    if (deleted[id] || legacy.has(x.mailId)) return; if (have.has(id)) { const t = findTx(id); if (t && x.card && !t.card && !t.edited) { t.card = x.card; added++; } if (t && t.source === 'correo' && !t.edited && !x.usd && (t.desc !== x.desc || t.amount !== x.amount || t.kind !== x.kind || (x.kind === 'traspaso' && t.category === 'Traspaso'))) { Object.assign(t, { desc: x.desc, amount: x.amount, kind: x.kind, date: x.date, category: x.kind === 'traspaso' ? (x.amount > 0 ? 'Ingreso' : guessCategory(x.desc)) : x.kind === 'transfer_in' ? 'Ingreso' : guessCategory(x.desc.replace(/^Anulación · /, '')) }); added++; } return; }
+    if (deleted[id] || legacy.has(x.mailId)) return; if (have.has(id)) { const t = findTx(id); if (t && x.card && t.card !== x.card && !t.edited) { t.card = x.card; added++; } if (t && t.source === 'correo' && !t.edited && !x.usd && (t.desc !== x.desc || t.amount !== x.amount || t.kind !== x.kind || (x.kind === 'traspaso' && t.category === 'Traspaso'))) { Object.assign(t, { desc: x.desc, amount: x.amount, kind: x.kind, date: x.date, category: x.kind === 'traspaso' ? (x.amount > 0 ? 'Ingreso' : guessCategory(x.desc)) : x.kind === 'transfer_in' ? 'Ingreso' : guessCategory(x.desc.replace(/^Anulación · /, '')) }); added++; } return; }
     let category;
     if (x.kind === 'traspaso') category = x.amount > 0 ? 'Ingreso' : guessCategory(x.desc);
     else if (x.kind === 'transfer_in') category = 'Ingreso';
     else if (x.kind === 'anulacion') { const o = x.of && findTx('m_' + x.of); category = o ? catOf(o) : guessCategory(x.desc.replace(/^Anulación · /, '')); }
+    else if (x.amount > 0) category = 'Ingreso';
     else category = guessCategory(x.desc);
-    const usd = x.usd ? Math.abs(x.usd) : 0; state.transactions.push({ id, date: x.date, desc: usd ? x.desc + ' (USD ' + String(usd).replace('.', ',') + ')' : x.desc, amount: usd ? Math.sign(x.usd) * Math.round(usd * (state.usdRate || 890)) : x.amount, usd: x.usd || undefined, card: x.card || undefined, category, source: 'correo', kind: x.kind || 'compra' });
+    const usd = x.usd ? Math.abs(x.usd) : 0;
+    const t = { id, date: x.date, desc: usd ? x.desc + ' (USD ' + String(usd).replace('.', ',') + ')' : x.desc, amount: usd ? Math.sign(x.usd) * Math.round(usd * (state.usdRate || 890)) : x.amount, usd: x.usd || undefined, card: x.card || undefined, category, source: 'correo', kind: x.kind || 'compra' };
+    const twin = x.kind === 'anulacion' ? null : findTwin(t);
+    if (x.kind === 'revisar') t.pending = 'revisar';
+    else if (twin) { t.pending = 'dup'; t.dupOf = String(twin.id); }
+    const rec = t.amount < 0 && state.recurring.find(r => r.rendir && sameName(r.title, t.desc));
+    if (rec) t.rendir = true;
+    state.transactions.push(t);
     have.add(id); added++;
   });
   return added;
+}
+// Mismo monto (mismo signo) el mismo día o el siguiente, o comprobante y aviso del banco de la misma compra: queda "por revisar".
+function sameName(a, b) { const w = merchantKey(a).split(' ')[0]; return w && w.length >= 3 && merchantKey(b).includes(w); }
+function findTwin(t) {
+  const day = s => Math.round(new Date(s + 'T12:00:00') / 864e5), d0 = day(t.date);
+  const near = state.transactions.filter(o => o !== t && String(o.id) !== String(t.id) && Math.abs(day(o.date) - d0) <= 1 && (o.amount < 0) === (t.amount < 0));
+  return near.find(o => o.amount === t.amount || (t.usd && o.usd === t.usd))
+    || near.find(o => (t.kind === 'recibo') !== (o.kind === 'recibo') && sameName(t.kind === 'recibo' ? t.desc : o.desc, t.kind === 'recibo' ? o.desc : t.desc) && Math.abs(o.amount - t.amount) <= Math.abs(t.amount) * 0.2)
+    || null;
 }
 // Una sola vez: los movimientos del correo antiguos se vuelven a leer con el lector nuevo.
 async function migrateMail() {
@@ -1084,6 +1267,7 @@ async function migrateMail() {
   try { await api('rescanMail', { days: 45 }); } catch (e) {}
   pendingPush = true;
 }
+function setRut(v) { const d = String(v).replace(/[^\d]/g, ''); if (d) lsSet(LS_RUT, d); else { try { localStorage.removeItem(LS_RUT); } catch (e) {} } toast(d ? 'RUT guardado en este aparato' : 'RUT borrado'); cartolaTried = {}; pull(); }
 function setUsd(v) { state.usdRate = parseMoney(v) || 890; commit(); toast('Valor del dólar guardado'); } function syncNow() { closeSheet('sh-settings'); pull(); }
 window.addEventListener('online', () => pull());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pull(); });
@@ -1091,7 +1275,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function openSettings() {
   $('st-sync').textContent = config ? 'Conectado a Google Drive' : 'No conectado';
   const last = +lsGet(LS_SYNC); $('st-last').textContent = last ? new Date(last).toLocaleString('es-CL') : '—';
-  $('st-count').textContent = state.transactions.length; $('st-usd').value = clp(state.usdRate || 890);
+  $('st-count').textContent = state.transactions.length; $('st-usd').value = clp(state.usdRate || 890); $('st-rut').value = lsGet(LS_RUT) || '';
   $('st-url').value = config ? config.url : ''; $('st-token').value = config ? config.token : '';
   openSheet('sh-settings');
 }
@@ -1129,7 +1313,10 @@ const CAT_RULES = [
 const INCOME_RE = /abono|dep[oó]sito|transf.{0,20}recib|sueldo|remuneraci|reembolso|devoluci/i;
 const SKIP_RE = /gracias por su pago/i; const CARD_PAY_RE = /pago (de )?(deuda )?(de )?(la )?tarjeta|pago tc\b|pago tarjeta/i; const SELF_RE = /garc[ií]a\s*-?\s*huidobro|cristian\s+garc[ií]a\b/i;
 const SUMMARY_RE = /^(saldo|total|subtotal|cupo|monto total|pago m[ií]nimo|fecha|detalle)/i;
-function guessCategory(desc) { for (const [c, re] of CAT_RULES) if (re.test(desc)) { const k = state.categories.find(x => x.orig === c); if (k) return k.name; } return otrosName(); }
+function merchantKey(desc) { return String(desc || '').toLowerCase().replace(/^anulaci[oó]n · /, '').replace(/\(usd[^)]*\)/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w.length > 1).slice(0, 2).join(' '); }
+const GENERIC_W = /^(transferencia|compra|pago|abono|cargo|traspaso|anulacion|giro|comision|intereses?|movimiento|deposito)$/;
+function learnedKeys(desc) { const k = merchantKey(desc), w = k.split(' ')[0]; return [k].concat(w && w !== k && w.length >= 4 && !GENERIC_W.test(w) ? [w] : []); }
+function guessCategory(desc) { for (const k of learnedKeys(desc)) { const lk = state.learned && state.learned[k]; if (lk && state.categories.some(c => c.name === lk)) return lk; } for (const [c, re] of CAT_RULES) if (re.test(desc)) { const k = state.categories.find(x => x.orig === c); if (k) return k.name; } return otrosName(); }
 
 function loadScript(url) {
   return new Promise((res, rej) => {
@@ -1214,10 +1401,14 @@ function parseTable(rows) {
   });
   return out;
 }
-async function readPdfText(buf) {
+async function readPdfText(buf, passwords) {
   await loadScript(PDFJS_URL);
   pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let pdf = null, lastErr = null;
+  for (const password of (passwords && passwords.length ? passwords : [undefined])) {
+    try { pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf).slice(), password }).promise; break; } catch (e) { lastErr = e; }
+  }
+  if (!pdf) throw lastErr || new Error('No se pudo abrir el PDF');
   const lines = [];
   for (let p = 1; p <= pdf.numPages; p++) {
     const items = (await (await pdf.getPage(p)).getTextContent()).items.filter(it => it.str && it.str.trim());
@@ -1277,16 +1468,49 @@ function importText() {
   if (!rows.length) { impStatus('No encontré movimientos. Cada línea necesita una fecha y un monto.', true); return; }
   $('imp-text').value = ''; impStatus(''); openReview(rows);
 }
-let pending = [];
-function openReview(rows) {
+let pending = [], reviewCartola = null;
+function markDups(rows, win) {
   const day = s => Math.round(new Date(s + 'T12:00:00') / 864e5);
   const used = new Set();
   rows.forEach(r => {
-    const m = state.transactions.find(t => !used.has(t) && t.amount === r.amount && Math.abs(day(t.date) - day(r.date)) <= 1);
+    const m = state.transactions.find(t => !used.has(t) && t.amount === r.amount && Math.abs(day(t.date) - day(r.date)) <= win);
     r.dup = !!m; if (m) { used.add(m); r.on = false; }
   });
-  pending = rows; closeSheet('sh-import'); drawReview(); openSheet('sh-review');
+  return rows;
 }
+function openReview(rows, cartolaId) {
+  reviewCartola = cartolaId || null;
+  markDups(rows, cartolaId ? 3 : 1);
+  pending = cartolaId ? rows.filter(r => !r.dup) : rows;
+  $('rv-skip').hidden = !cartolaId;
+  closeSheet('sh-import'); drawReview(); openSheet('sh-review');
+}
+// Cartola BCI: llega por correo con clave (tu RUT); la app la abre aquí y muestra solo lo que te falta.
+let cartolaTried = {}, cartolaData = null;
+function cartolaDone(id) { state.cartolasDone = Array.from(new Set((state.cartolasDone || []).concat(id))); cartolaNote = ''; cartolaData = null; commit(); }
+async function checkCartolas(list) {
+  const done = new Set(state.cartolasDone || []);
+  const todo = list.filter(c => !done.has(c.id)).sort((a, b) => a.date < b.date ? -1 : 1);
+  if (!todo.length) { if (cartolaNote) { cartolaNote = ''; renderNotes(); } return; }
+  const c = todo[todo.length - 1];
+  if (cartolaTried[c.id]) return; cartolaTried[c.id] = true;
+  const note = (txt, fn) => `<button class="note" onclick="${fn}"><span>📄</span><span class="grow">${txt}</span><span>›</span></button>`;
+  const rut = lsGet(LS_RUT);
+  if (!rut) { cartolaNote = note('Llegó tu cartola BCI. Escribe tu RUT en Ajustes para que Check la lea.', 'openSettings()'); renderNotes(); return; }
+  try {
+    const r = await api('cartola', { id: c.id });
+    if (!r.cartola) return;
+    const bin = atob(r.cartola.b64), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    const pw = [rut.padStart(8, '0'), rut, rut.slice(0, -1).padStart(8, '0')];
+    const rows = markDups(parseText(await readPdfText(buf, pw)), 3);
+    const fresh = rows.filter(x => !x.dup);
+    if (!fresh.length) { cartolaDone(c.id); toast('Cartola revisada: no faltaba nada'); return; }
+    cartolaData = { id: c.id, rows };
+    cartolaNote = note(`Tu cartola del ${fmtDay(c.date)} trae ${fresh.length} ${fresh.length === 1 ? 'movimiento que no tenías' : 'movimientos que no tenías'}. Revisar`, 'openCartola()');
+  } catch (e) { cartolaNote = note(/password/i.test(e && (e.name + e.message)) ? 'No pude abrir la cartola con tu RUT. Revísalo en Ajustes.' : 'No pude leer la cartola: ' + esc(e.message || e), /password/i.test(e && (e.name + e.message)) ? 'openSettings()' : "cartolaTried={};pull()"); }
+  renderNotes();
+}
+function openCartola() { if (cartolaData) openReview(cartolaData.rows.map(r => Object.assign({}, r, { on: !r.dup && r.on !== false })), cartolaData.id); }
 function drawReview() {
   const list = $('rv-list'); list.innerHTML = '';
   pending.forEach((r, i) => {
@@ -1312,7 +1536,7 @@ function confirmImport() {
   const sel = pending.filter(r => r.on); if (!sel.length) return;
   const base = Date.now();
   const tcImp = $('imp-tc').checked; sel.forEach((r, i) => state.transactions.push({ id: base + i, date: r.date, desc: r.desc, amount: r.amount, category: r.category, card: tcImp && !isSpecial(r.category) ? 'crédito' : undefined }));
-  pending = []; closeSheet('sh-review'); commit(); toast(sel.length + ' movimientos importados');
+  pending = []; closeSheet('sh-review'); if (reviewCartola) cartolaDone(reviewCartola); else commit(); toast(sel.length + ' movimientos importados');
 }
 
 // ================= Inicio =================
