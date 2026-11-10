@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0a10">
+<meta name="theme-color" content="#0b1d51">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* Layout: una columna móvil, cabecera con selector de mes, vistas por pestaña, barra inferior con botón central */
 :root {
@@ -220,6 +220,47 @@ details.more summary { font-weight: 700; font-size: 14px; color: var(--muted); c
 .pend-item .btn { padding: 11px; font-size: 14px; }
 .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .kv span:last-child { color: var(--muted); font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+/* Tema azul (estilo Macana): cabecera azul marino, fondo claro, tarjetas blancas */
+:root, :root:not(#x) {
+  color-scheme: light;
+  --bg: #eef1f7; --surface: #ffffff; --surface-2: #f1f4fa; --line: #e3e7f0;
+  --text: #1a2140; --muted: #6a7291; --dim: #a5abc0;
+  --accent: #1d4ed8; --accent-2: #3b82f6; --accent-text: #1d4ed8;
+  --good: #15a34a; --bad: #e11d48; --on-accent: #ffffff; --scrim: rgba(10, 20, 60, 0.45);
+  --navy: #0b1d51; --navy-2: #1a3a8f;
+  --num: "Exo 2", "Manrope", sans-serif;
+}
+html, body { background: var(--bg); }
+.top { background: linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 100%); color: #fff; border-radius: 0 0 26px 26px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(11, 29, 81, 0.18); }
+.top .brand-mark { background: #fff; color: var(--navy); }
+.top .sync { color: rgba(255, 255, 255, 0.72); }
+.top .round-btn { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.18); color: #fff; border-radius: 50%; }
+.top .month { padding-bottom: 14px; }
+.card { border: none; box-shadow: 0 1px 3px rgba(16, 24, 64, 0.06), 0 6px 18px rgba(16, 24, 64, 0.04); }
+.hero { background: linear-gradient(150deg, #13286b 0%, #1d47b0 100%); color: #fff; box-shadow: 0 10px 28px rgba(19, 40, 107, 0.28); }
+.hero .label, .hero .tx-sub { color: rgba(255, 255, 255, 0.68); }
+.hero .pill-stat, .hero .tc-row { background: rgba(255, 255, 255, 0.09); color: #fff; }
+.hero .tc-row.total { background: rgba(255, 255, 255, 0.18); }
+.hero .pos { color: #6ee7a8; }
+.hero .neg { color: #fda4b4; }
+.big, .pill-stat .v, .donut-center .v, .mini .v, .tx-amt, .tc-row .num { font-family: var(--num); letter-spacing: -0.01em; }
+.big { font-size: 38px; }
+.tx { border: none; box-shadow: 0 1px 2px rgba(16, 24, 64, 0.05); border-radius: 18px; }
+.mini { border: none; box-shadow: 0 1px 3px rgba(16, 24, 64, 0.06); }
+.note { border: none; box-shadow: 0 1px 3px rgba(16, 24, 64, 0.06); }
+.note.warn { background: #fff8e6; }
+.chip { background: var(--surface); border-color: var(--line); }
+.chip.on { background: var(--navy); border-color: var(--navy); }
+.input { background: var(--surface-2); border-color: transparent; }
+.input:focus { border-color: var(--accent-2); background: #fff; }
+.btn { border-radius: 16px; }
+.fab { border-radius: 50%; background: linear-gradient(135deg, var(--navy-2), var(--accent-2)); box-shadow: 0 10px 24px rgba(29, 78, 216, 0.38); }
+.nav { background: rgba(255, 255, 255, 0.94); }
+.nav-btn.on { color: var(--accent); }
+.seg button.on { box-shadow: 0 1px 4px rgba(16, 24, 64, 0.12); }
+.sheet { border-top: none; }
+.section h2 { color: var(--text); }
+.link { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
