@@ -345,6 +345,8 @@ html, body { background: var(--bg); }
   <section class="view" id="v-cats" hidden>
     <div class="section" style="margin-top:6px;"><h2>Gasto por categoría</h2><button class="link" onclick="openCats()">Editar categorías</button></div>
     <div class="card stack" id="cat-bars"></div>
+    <div class="section"><h2>Ingresos por categoría</h2></div>
+    <div class="card stack" id="inc-bars"></div>
     <div class="section"><h2>Mes a mes</h2></div>
     <div class="card"><div class="chips" id="fin-chips" style="padding-top:0"></div><div class="chart" id="fin-chart"></div><p class="tx-sub" id="fin-avg" style="margin-top:10px;text-align:center"></p></div>
   </section>
@@ -404,8 +406,10 @@ html, body { background: var(--bg); }
     <label class="field"><input class="input amount-input num" id="tx-amount" type="text" inputmode="numeric" placeholder="$0" autocomplete="off" oninput="fmtAmountInput(this)"></label>
     <label class="field"><span>Descripción</span><input class="input" id="tx-desc" type="text" placeholder="Ej: Almuerzo, Uber, Copec" autocomplete="off" oninput="autoCat()"></label>
     <div class="field" id="tx-cat-field"><span>Categoría</span><div class="cat-grid" id="tx-cats"></div></div>
+    <div class="field" id="tx-icat-field" hidden><span>Categoría del ingreso</span><div class="cat-grid" id="tx-icats"></div>
+      <div class="search" id="tx-icat-new" hidden style="margin-top:8px"><input class="input" id="tx-icat-name" placeholder="Ej: Arriendo depto" autocomplete="off"><button type="button" class="btn" style="width:auto;padding:0 18px" onclick="addIcat()">Agregar</button></div></div>
     <label class="field"><span>Fecha</span><input class="input" id="tx-date" type="date"></label>
-    <label class="check-row" id="tx-ref-row"><input type="checkbox" id="tx-isref" onchange="$('tx-ref-field').hidden = !this.checked"> ↩️ Es una devolución</label>
+    <label class="check-row" id="tx-ref-row"><input type="checkbox" id="tx-isref" onchange="$('tx-ref-field').hidden = !this.checked; $('tx-icat-field').hidden = this.checked"> ↩️ Es una devolución</label>
     <label class="field" id="tx-ref-field" hidden><span>¿Devolución de qué?</span><select class="input" id="tx-ref"></select></label>
     <label class="check-row" id="tx-tc-row"><input type="checkbox" id="tx-tc"> 💳 Pagado con tarjeta de crédito</label>
     <label class="check-row"><input type="checkbox" id="tx-rendir" onchange="$('tx-trip-field').hidden = !this.checked"> 🧾 Rendir (no cuenta en el balance)</label>
@@ -613,6 +617,8 @@ const DEFAULT_CATS = [
   { name: 'Regalos', e: '🎁', c: '#f87171', orig: 'Regalos' },
   { name: 'Otros', e: '📦', c: '#94a3b8', orig: 'Otros' }
 ];
+const INC_DEFAULT = [{ name: 'Sueldo', e: '💼' }, { name: 'Transferencias', e: '💸' }, { name: 'Ventas', e: '🏷️' }, { name: 'Intereses', e: '📈' }, { name: 'Otros ingresos', e: '💰' }];
+const INC_RULES = [['Sueldo', /sueldo|remuneraci|n[oó]mina|honorario|liquidaci[oó]n/i], ['Intereses', /inter[eé]s|rentabilidad|dividendo|rescate/i], ['Ventas', /venta|mercado ?libre|yapo|marketplace/i], ['Transferencias', /transf|abono|dep[oó]sito/i]];
 const PALETTE = ['#34d399', '#fb923c', '#a78bfa', '#facc15', '#22d3ee', '#f472b6', '#f87171', '#94a3b8', '#60a5fa', '#c084fc', '#4ade80', '#fbbf24'];
 const INV_TYPES = { 'Fondo mutuo': '📈', 'Depósito a plazo': '🏦', 'Acciones': '📊', 'ETF': '🌎', 'APV': '🧓', 'Cripto': '🪙', 'Cuenta de ahorro': '🐷', 'Propiedad': '🏠', 'Otro': '💼' };
 let CATS = {}, EXPENSE_CATS = [];
@@ -653,6 +659,8 @@ function normalize(s) {
   s.installments = s.installments.map(i => Object.assign({}, i, { cuota: +i.cuota || 0, totalCuotas: +i.totalCuotas || 1, current: +i.current || 0 }));
   if (!s.catMama) { if (!s.categories.some(c => c.orig === 'Gastos mamá')) s.categories.push({ name: 'Gastos mamá', e: '👵', c: '#60a5fa', orig: 'Gastos mamá', split: ['Constanza', 'María de los Ángeles'] }); s.catMama = 1; }
   s.learned = s.learned || {}; s.cartolasDone = s.cartolasDone || [];
+  if (!Array.isArray(s.incomeCats) || !s.incomeCats.length) s.incomeCats = clone(INC_DEFAULT);
+  s.learnedInc = s.learnedInc || {};
   return s;
 }
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -696,6 +704,16 @@ function balOf(key) { return txOf(key).filter(inBal); }
 function splitOf(cat) { const c = state.categories.find(x => x.name === cat); return c && Array.isArray(c.split) && c.split.length ? c.split : null; }
 function shortClp(v) { v = Math.abs(v); return v >= 1e6 ? '$' + (v / 1e6).toFixed(1).replace('.', ',') + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'k' : clp(v); }
 function fmtDay(d) { return new Date(d + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }); }
+// Categorías de ingresos (Sueldo, Transferencias…): se adivinan por la descripción y aprenden de ti.
+function incCat(name) { return state.incomeCats.find(c => c.name === name); }
+function lastIncName() { return incCat('Otros ingresos') ? 'Otros ingresos' : state.incomeCats[state.incomeCats.length - 1].name; }
+function guessIncome(desc) {
+  for (const k of learnedKeys(desc)) { const v = state.learnedInc[k]; if (v && incCat(v)) return v; }
+  for (const [n, re] of INC_RULES) if (re.test(desc || '') && incCat(n)) return n;
+  return lastIncName();
+}
+function icatOf(t) { return t.icat && incCat(t.icat) ? t.icat : guessIncome(t.desc); }
+function isIncome(t) { return catOf(t) === 'Ingreso' && t.amount > 0; }
 function newId() { return Date.now() + Math.floor(Math.random() * 1000); }
 
 let toastT;
@@ -724,12 +742,12 @@ function render() {
 }
 
 function txRow(t) {
-  const c = CATS[catOf(t)];
+  const inc = isIncome(t), c = inc ? { e: (incCat(icatOf(t)) || {}).e || '💰', c: CATS['Ingreso'].c } : CATS[catOf(t)];
   const d = new Date(t.date + 'T12:00:00');
   return `<button class="tx" onclick="editTx('${esc(String(t.id))}')">
     <span class="cat-ico" style="background:${c.c}22">${c.e}</span>
     <span class="tx-body"><span class="tx-title" style="display:block">${esc(t.desc)}</span>
-    <span class="tx-sub" style="display:block">${t.refund ? '↩️ ' : ''}${esc(catOf(t))} · ${d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}${t.source === 'correo' ? ' · ✉️' : ''}${t.pending ? '<span class="tag warn">por revisar</span>' : ''}${t.rendir ? '<span class="tag">' + (t.rendido ? 'rendido' : 'rendir') + '</span>' : ''}</span></span>
+    <span class="tx-sub" style="display:block">${t.refund ? '↩️ ' : ''}${esc(inc ? icatOf(t) : catOf(t))} · ${d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}${t.source === 'correo' ? ' · ✉️' : ''}${t.pending ? '<span class="tag warn">por revisar</span>' : ''}${t.rendir ? '<span class="tag">' + (t.rendido ? 'rendido' : 'rendir') + '</span>' : ''}</span></span>
     <span class="tx-amt num ${t.amount > 0 ? 'pos' : ''}">${signed(t.amount)}</span></button>`;
 }
 
@@ -823,6 +841,11 @@ function renderCats() {
   $('cat-bars').innerHTML = EXPENSE_CATS.slice().sort((a, b) => cur[b] - cur[a]).map(c => `
     <div class="bar-row"><div class="bar-top"><span>${CATS[c].e} ${esc(c)} ${vsBadge(cur[c], prev[c])}</span><span class="num">${clp(cur[c])} <span style="color:var(--muted);font-weight:600">${total ? Math.round(cur[c] / total * 100) : 0}%</span></span></div>
     <div class="bar-track"><div class="bar-fill" style="width:${cur[c] / max * 100}%;background:${CATS[c].c}"></div></div></div>`).join('');
+  const incs = {}; balOf(monthKey(0)).filter(isIncome).forEach(t => { const n = icatOf(t); incs[n] = (incs[n] || 0) + t.amount; });
+  const iprev = {}; balOf(monthKey(-1)).filter(isIncome).forEach(t => { const n = icatOf(t); iprev[n] = (iprev[n] || 0) + t.amount; });
+  const inames = Object.keys(incs).sort((a, b) => incs[b] - incs[a]), itot = inames.reduce((s, n) => s + incs[n], 0), imax = Math.max(1, ...inames.map(n => incs[n]));
+  $('inc-bars').innerHTML = inames.length ? inames.map(n => `<div class="bar-row"><div class="bar-top"><span>${esc((incCat(n) || {}).e || '💰')} ${esc(n)}</span><span class="num">${clp(incs[n])} <span style="color:var(--muted);font-weight:600">${Math.round(incs[n] / itot * 100)}%</span></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${incs[n] / imax * 100}%;background:var(--good)"></div></div></div>`).join('') : '<div class="empty">Sin ingresos este mes.</div>';
   renderFin();
 }
 
@@ -917,6 +940,7 @@ function setKind(k) {
   $('tx-kind').children[2].classList.toggle('on', k === 0);
   $('tx-cat-field').hidden = k >= 0;
   $('tx-ref-row').hidden = k <= 0; $('tx-ref-field').hidden = k <= 0 || !$('tx-isref').checked;
+  $('tx-icat-field').hidden = k <= 0 || $('tx-isref').checked; if (k > 0) drawIcats();
   $('tx-tc-row').hidden = k > 0;
 }
 function fillRefOptions(t) {
@@ -930,7 +954,19 @@ function drawCats() {
   $('tx-cats').querySelectorAll('.cat-opt[data-i]').forEach(b => b.onclick = () => { txCat = EXPENSE_CATS[+b.dataset.i]; catTouched = true; drawCats(); });
   $('tx-cat-edit').onclick = () => { closeSheet('sh-tx'); openCats(); };
 }
-function autoCat() { if (catTouched || txKind > 0) return; const g = guessCategory($('tx-desc').value); if (g !== txCat) { txCat = g; drawCats(); } }
+let txIcat = 'Otros ingresos', icatTouched = false;
+function drawIcats() {
+  const list = state.incomeCats;
+  $('tx-icats').innerHTML = list.map((c, i) => `<button type="button" class="cat-opt ${c.name === txIcat ? 'on' : ''}" data-i="${i}"><span class="e">${esc(c.e)}</span>${esc(c.name)}</button>`).join('') + `<button type="button" class="cat-opt" id="tx-icat-add"><span class="e">➕</span>Nueva</button>`;
+  $('tx-icats').querySelectorAll('.cat-opt[data-i]').forEach(b => b.onclick = () => { txIcat = list[+b.dataset.i].name; icatTouched = true; drawIcats(); });
+  $('tx-icat-add').onclick = () => { $('tx-icat-new').hidden = false; $('tx-icat-name').focus(); };
+}
+function addIcat() {
+  const name = $('tx-icat-name').value.trim(); if (!name) return;
+  if (!incCat(name)) state.incomeCats.push({ name, e: '💰' });
+  txIcat = name; icatTouched = true; $('tx-icat-name').value = ''; $('tx-icat-new').hidden = true; drawIcats();
+}
+function autoCat() { if (txKind > 0) { if (!icatTouched) { const g = guessIncome($('tx-desc').value); if (g !== txIcat) { txIcat = g; drawIcats(); } } return; } if (catTouched) return; const g = guessCategory($('tx-desc').value); if (g !== txCat) { txCat = g; drawCats(); } }
 function findTx(id) { return state.transactions.find(x => String(x.id) === String(id)); }
 function editTx(id) {
   const t = id != null ? findTx(id) : null;
@@ -944,6 +980,7 @@ function editTx(id) {
   $('tx-rendir').checked = !!(t && t.rendir); $('tx-trip').value = t && t.trip || ''; $('tx-trip-field').hidden = !(t && t.rendir);
   $('trips').innerHTML = Array.from(new Set(state.transactions.map(x => x.trip).filter(Boolean))).map(x => `<option value="${esc(x)}">`).join('');
   $('tx-isref').checked = !!(t && t.refund); fillRefOptions(t);
+  icatTouched = !!(t && t.icat); txIcat = t && isIncome(t) && !t.refund ? icatOf(t) : lastIncName(); $('tx-icat-new').hidden = true;
   $('tx-pend').hidden = !(t && t.pending); if (t && t.pending) $('tx-pend-txt').textContent = t.pending === 'dup' ? 'Posible monto repetido. No cuenta hasta que lo confirmes.' : 'Por revisar: confirma monto y tipo.';
   const tc = t ? catOf(t) : null;
   txCat = t && !isSpecial(tc) ? tc : EXPENSE_CATS[0];
@@ -968,8 +1005,9 @@ function saveTx() {
   else { amount = prev && !isSpecial(catOf(prev)) && prev.amount > 0 ? amt : -amt; category = txCat; }   // anulaciones conservan su signo
   const rendir = $('tx-rendir').checked;
   const data = { edited: true, card: txKind < 0 && $('tx-tc').checked ? 'crédito' : (prev && prev.card === 'débito' ? 'débito' : undefined), date: $('tx-date').value || todayISO(), desc: desc || (txKind > 0 ? 'Ingreso' : txKind === 0 ? 'Traspaso' : txCat), amount, category,
-    refund, rcv, rendir: rendir || undefined, trip: rendir ? $('tx-trip').value.trim() || undefined : undefined, rendido: rendir && prev && prev.rendido ? true : undefined };
+    refund, rcv, icat: txKind > 0 && !refund ? txIcat : undefined, rendir: rendir || undefined, trip: rendir ? $('tx-trip').value.trim() || undefined : undefined, rendido: rendir && prev && prev.rendido ? true : undefined };
   if (txKind < 0 && catTouched && desc && !splitOf(txCat) && guessCategory(desc) !== txCat) learnedKeys(desc).forEach(k => { if (k) state.learned[k] = txCat; });   // aprende la categoría de este comercio
+  if (txKind > 0 && !refund && desc && icatTouched && guessIncome(desc) !== txIcat) learnedKeys(desc).forEach(k => { if (k) state.learnedInc[k] = txIcat; });
   if (prev) Object.assign(prev, data);
   else state.transactions.push(Object.assign({ id: newId() }, data));
   closeSheet('sh-tx'); commit(); toast(editingTx ? 'Movimiento actualizado' : 'Movimiento guardado');
@@ -1170,6 +1208,7 @@ function mergeStates(a, b) {
   out.catsU = Math.max(a.catsU || 0, b.catsU || 0);
   out.v = Math.max(a.v || 0, b.v || 0);
   out.learned = Object.assign({}, a.learned || {}, b.learned || {});
+  out.learnedInc = Object.assign({}, a.learnedInc || {}, b.learnedInc || {});
   out.cartolasDone = Array.from(new Set((a.cartolasDone || []).concat(b.cartolasDone || []))).slice(-50);
   out.mailSeen = out.v >= 3 ? [] : Array.from(new Set((a.mailSeen || []).concat(b.mailSeen || []))).slice(-1500);
   out.deleted = deleted;
