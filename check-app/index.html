@@ -301,7 +301,7 @@ html, body { background: var(--bg); }
         <div class="pill-stat"><div class="label">Ingresos</div><div class="v num pos" id="h-inc">$0</div></div>
         <div class="pill-stat"><div class="label">Gastos</div><div class="v num neg" id="h-exp">$0</div></div>
       </div>
-      <div class="tc-rows"><button class="tc-row" onclick="go('v-tc')"><span>💳 Tarjeta de crédito ›</span><span class="num neg" id="h-tc">$0</span></button><div class="tc-row total"><span>Balance después de la tarjeta</span><span class="num" id="h-after">$0</span></div><button class="tc-row" id="h-rendir-row" onclick="go('v-rendir')" hidden><span>🧾 Por rendir (fuera del balance) ›</span><span class="num" id="h-rendir">$0</span></button></div>
+      <div class="tc-rows"><button class="tc-row" onclick="go('v-tc')"><span>💳 Tarjeta de crédito ›</span><span class="num neg" id="h-tc">$0</span></button><div class="tc-row total"><span>Balance después de la tarjeta</span><span class="num" id="h-after">$0</span></div><button class="tc-row" onclick="go('v-next')"><span>⏳ Ingresos pendientes (por cobrar) ›</span><span class="num pos" id="h-cobrar">$0</span></button><button class="tc-row" id="h-rendir-row" onclick="go('v-rendir')" hidden><span>🧾 Por rendir (fuera del balance) ›</span><span class="num" id="h-rendir">$0</span></button></div>
     </div>
 
     <div class="section"><h2>En qué se fue</h2><button class="link" onclick="go('v-cats')">Detalle</button></div>
@@ -409,8 +409,8 @@ html, body { background: var(--bg); }
     <div class="field" id="tx-icat-field" hidden><span>Categoría del ingreso</span><div class="cat-grid" id="tx-icats"></div>
       <div class="search" id="tx-icat-new" hidden style="margin-top:8px"><input class="input" id="tx-icat-name" placeholder="Ej: Arriendo depto" autocomplete="off"><button type="button" class="btn" style="width:auto;padding:0 18px" onclick="addIcat()">Agregar</button></div></div>
     <label class="field"><span>Fecha</span><input class="input" id="tx-date" type="date"></label>
-    <label class="check-row" id="tx-ref-row"><input type="checkbox" id="tx-isref" onchange="$('tx-ref-field').hidden = !this.checked; $('tx-icat-field').hidden = this.checked"> ↩️ Es una devolución</label>
-    <label class="field" id="tx-ref-field" hidden><span>¿Devolución de qué?</span><select class="input" id="tx-ref"></select></label>
+    <label class="check-row" id="tx-ref-row"><input type="checkbox" id="tx-isref" onchange="$('tx-ref-field').hidden = !this.checked; $('tx-icat-field').hidden = this.checked"> ↩️ Es devolución o aporte a un gasto</label>
+    <label class="field" id="tx-ref-field" hidden><span>¿Devolución o aporte de qué?</span><select class="input" id="tx-ref"></select></label>
     <label class="check-row" id="tx-tc-row"><input type="checkbox" id="tx-tc"> 💳 Pagado con tarjeta de crédito</label>
     <label class="check-row"><input type="checkbox" id="tx-rendir" onchange="$('tx-trip-field').hidden = !this.checked"> 🧾 Rendir (no cuenta en el balance)</label>
     <label class="field" id="tx-trip-field" hidden><span>Viaje o grupo (opcional)</span><input class="input" id="tx-trip" list="trips" placeholder="Ej: Viaje Asia" autocomplete="off"><datalist id="trips"></datalist></label>
@@ -771,6 +771,7 @@ function renderHome() {
   $('h-after').textContent = (inc - exp < 0 ? '-' : '') + clp(inc - exp);
   $('h-after').className = 'num ' + (inc - exp < 0 ? 'neg' : 'pos');
   $('h-inc').textContent = clp(inc);
+  $('h-cobrar').textContent = clp(state.receivables.filter(r => !r.paid).reduce((s, r) => s + Math.max(0, r.amount - (r.got || 0)), 0));
   $('h-exp').textContent = clp(exp);
 
   const by = expByCat(txs);
@@ -1221,9 +1222,17 @@ function syncLinks() {
   state.deleted = state.deleted || {};
   const txById = {}; state.transactions.forEach(t => txById[String(t.id)] = t);
   const splitTx = t => t && t.amount < 0 && !t.rendir && !t.pending && splitOf(t.category);
+  // Aportes del mes en la categoría (ej: tu mamá pone una parte) se descuentan antes de dividir.
+  const spent = {}, aport = {};
+  state.transactions.forEach(t => {
+    const k = String(t.date).slice(0, 7) + '|' + t.category;
+    if (splitTx(t)) spent[k] = (spent[k] || 0) - t.amount;
+    else if (t.amount > 0 && t.rcv == null && !t.pending && !t.rendir && splitOf(t.category)) aport[k] = (aport[k] || 0) + t.amount;
+  });
   state.transactions.forEach(t => {
     const sp = splitTx(t); if (!sp) return;
-    const share = Math.round(-t.amount / (sp.length + 1));
+    const k = String(t.date).slice(0, 7) + '|' + t.category, part = -t.amount - (aport[k] || 0) * (-t.amount) / spent[k];
+    const share = Math.max(0, Math.round(part / (sp.length + 1)));
     sp.forEach((name, i) => {
       const id = 's_' + t.id + '_' + i;
       if (state.deleted[id] >= (t.u || 0)) return;   // la borraste tú
