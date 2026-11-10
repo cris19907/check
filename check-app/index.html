@@ -519,7 +519,7 @@ html, body { background: var(--bg); }
     <h3>Ajustes</h3>
     <div class="kv"><span>Sincronización</span><span id="st-sync">—</span></div>
     <div class="kv"><span>Última sincronización</span><span id="st-last">—</span></div>
-    <div class="kv"><span>Movimientos guardados</span><span id="st-count">0</span></div><label class="field" style="margin-top:12px;"><span>RUT para abrir la cartola BCI (sin guión ni dígito verificador)</span><input class="input num" id="st-rut" inputmode="numeric" autocomplete="off" placeholder="Solo queda guardado en este aparato" onchange="setRut(this.value)"></label><label class="field"><span>Valor del dólar para compras en USD</span><input class="input num" id="st-usd" inputmode="numeric" onchange="setUsd(this.value)"></label>
+    <div class="kv"><span>Movimientos guardados</span><span id="st-count">0</span></div><label class="field" style="margin-top:12px;"><span>RUT para abrir la cartola BCI (sin guión ni dígito verificador)</span><input class="input num" id="st-rut" inputmode="numeric" autocomplete="off" placeholder="Solo queda guardado en este aparato" onchange="setRut(this.value)"></label><label class="field"><span>Dólar de respaldo (las compras en USD usan el dólar observado del día de cada compra)</span><input class="input num" id="st-usd" inputmode="numeric" onchange="setUsd(this.value)"></label>
     <details class="more">
       <summary>Conectar con Google Drive</summary>
       <p class="help" style="margin-top:12px;">Pega la dirección del servidor y la clave. Solo se hace una vez por aparato.</p>
@@ -1286,7 +1286,7 @@ async function pull() {
     const merged = remoteObj && !state.updatedAt ? remoteObj : mergeStates(remoteObj || {}, state);
     setState(merged);
     const added = mergeInbox(r.inbox || []);
-    checkCartolas(r.cartolas || []);
+    checkCartolas(r.cartolas || []); syncFx();
     if (added) { stampChanges(); syncLinks(); stampChanges(); lsSet(LS_DATA, JSON.stringify(state)); render(); toast(added === 1 ? '1 movimiento agregado desde tu correo' : added + ' movimientos agregados desde tu correo'); }
     if (added || pendingPush || JSON.stringify(normalize(JSON.parse(remoteText) || {})) !== JSON.stringify(state)) await push();
     else { lsSet(LS_SYNC, String(Date.now())); setSync('Guardado en Drive', 'ok'); }
@@ -1348,6 +1348,37 @@ async function migrateMail() {
   pendingPush = true;
 }
 function setRut(v) { const d = String(v).replace(/[^\d]/g, ''); if (d) lsSet(LS_RUT, d); else { try { localStorage.removeItem(LS_RUT); } catch (e) {} } toast(d ? 'RUT guardado en este aparato' : 'RUT borrado'); cartolaTried = {}; pull(); }
+// Compras en dólares: se pasan a pesos con el dólar observado del día de la compra (mindicador.cl, fuente Banco Central).
+const fxYears = {};
+async function fxSeries(y) {
+  if (fxYears[y]) return fxYears[y];
+  const key = 'check_fx_' + y, cached = (() => { try { return JSON.parse(lsGet(key)); } catch (e) { return null; } })();
+  if (cached && (y < new Date().getFullYear() || Date.now() - cached.at < 6 * 36e5)) return (fxYears[y] = cached.s);
+  const j = await (await fetch('https://mindicador.cl/api/dolar/' + y)).json();
+  const s = {}; (j.serie || []).forEach(x => { s[String(x.fecha).slice(0, 10)] = +x.valor; });
+  lsSet(key, JSON.stringify({ at: Date.now(), s }));
+  return (fxYears[y] = s);
+}
+async function rateOn(date) {
+  const y = +date.slice(0, 4);
+  const all = Object.assign({}, await fxSeries(y - 1).catch(() => ({})), await fxSeries(y));
+  const days = Object.keys(all).filter(d => d <= date).sort();
+  return days.length ? all[days[days.length - 1]] : null;
+}
+let fxBusy = false;
+async function syncFx() {
+  if (fxBusy) return; fxBusy = true;
+  try {
+    const todo = state.transactions.filter(t => t.usd && !t.edited && t.fxd !== t.date);
+    let n = 0;
+    for (const t of todo) {
+      const r = await rateOn(t.date); if (!r) continue;
+      t.amount = Math.sign(t.usd) * Math.round(Math.abs(t.usd) * r); t.fx = r; t.fxd = t.date; n++;
+    }
+    if (n) commit();
+  } catch (e) {}
+  fxBusy = false;
+}
 function setUsd(v) { state.usdRate = parseMoney(v) || 890; commit(); toast('Valor del dólar guardado'); } function syncNow() { closeSheet('sh-settings'); pull(); }
 window.addEventListener('online', () => pull());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pull(); });
